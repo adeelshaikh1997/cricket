@@ -75,10 +75,12 @@ sportmonksAPI.interceptors.response.use(
 // Teams
 export const getTeams = async () => {
   try {
-    const response = await sportmonksAPI.get('/teams');
-    return response.data?.data || [];
+    console.log('🏏 Fetching teams from backend API...');
+    const response = await backendAPI.get('/teams');
+    console.log('✅ Teams response:', response.data);
+    return response.data || { data: [] };
   } catch (error) {
-    console.error('Failed to fetch teams:', error);
+    console.error('❌ Failed to fetch teams from backend:', error);
     throw error;
   }
 };
@@ -86,10 +88,12 @@ export const getTeams = async () => {
 // Fixtures (matches)
 export const getFixtures = async (params = {}) => {
   try {
-    const response = await sportmonksAPI.get('/fixtures', { params });
-    return response.data?.data || [];
+    console.log('🏟️ Fetching fixtures from backend API...');
+    const response = await backendAPI.get('/fixtures', { params });
+    console.log('✅ Fixtures response:', response.data);
+    return response.data || { data: [] };
   } catch (error) {
-    console.error('Failed to fetch fixtures:', error);
+    console.error('❌ Failed to fetch fixtures from backend:', error);
     throw error;
   }
 };
@@ -97,11 +101,13 @@ export const getFixtures = async (params = {}) => {
 // Players
 export const getPlayers = async (teamId = null) => {
   try {
-    const endpoint = teamId ? `/teams/${teamId}/squad` : '/players';
-    const response = await sportmonksAPI.get(endpoint);
-    return response.data?.data || [];
+    console.log('👥 Fetching players from backend API...');
+    const endpoint = teamId ? `/teams/${teamId}/players` : '/players';
+    const response = await backendAPI.get(endpoint);
+    console.log('✅ Players response:', response.data);
+    return response.data || { data: [] };
   } catch (error) {
-    console.error('Failed to fetch players:', error);
+    console.error('❌ Failed to fetch players from backend:', error);
     throw error;
   }
 };
@@ -109,10 +115,12 @@ export const getPlayers = async (teamId = null) => {
 // Venues
 export const getVenues = async () => {
   try {
-    const response = await sportmonksAPI.get('/venues');
-    return response.data?.data || [];
+    console.log('🏟️ Fetching venues from backend API...');
+    const response = await backendAPI.get('/venues');
+    console.log('✅ Venues response:', response.data);
+    return response.data || { data: [] };
   } catch (error) {
-    console.error('Failed to fetch venues:', error);
+    console.error('❌ Failed to fetch venues from backend:', error);
     throw error;
   }
 };

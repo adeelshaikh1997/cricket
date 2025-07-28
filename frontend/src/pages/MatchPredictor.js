@@ -1,80 +1,107 @@
 import React, { useState, useEffect } from 'react';
+import { Trophy, Target, TrendingUp, Users, MapPin, Calendar, Loader2, AlertCircle } from 'lucide-react';
 import Card from '../components/common/Card';
-import { 
-  Target, 
-  Trophy, 
-  MapPin, 
-  Users, 
-  TrendingUp, 
-  AlertCircle,
-  Loader2
-} from 'lucide-react';
+import { predictMatch, getTeams, getVenues } from '../services/api';
 
 const MatchPredictor = () => {
-  const [teams, setTeams] = useState([]);
-  const [venues, setVenues] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [prediction, setPrediction] = useState(null);
-  const [error, setError] = useState(null);
-
   const [formData, setFormData] = useState({
     teamA: '',
     teamB: '',
     venue: '',
     tossWinner: '',
     tossDecision: 'bat',
-    matchType: 'T20'
+    matchType: 't20'
   });
 
+  const [prediction, setPrediction] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Real data state
+  const [realData, setRealData] = useState({
+    teams: [],
+    venues: [],
+    loading: true,
+    error: null
+  });
+
+  // Load real cricket data
   useEffect(() => {
-    loadInitialData();
+    const loadRealData = async () => {
+      try {
+        setRealData(prev => ({ ...prev, loading: true, error: null }));
+        
+        const [teamsResponse, venuesResponse] = await Promise.all([
+          getTeams(),
+          getVenues()
+        ]);
+
+        setRealData({
+          teams: teamsResponse.data || [],
+          venues: venuesResponse.data || [],
+          loading: false,
+          error: null
+        });
+      } catch (error) {
+        console.error('Error loading cricket data:', error);
+        setRealData(prev => ({
+          ...prev,
+          loading: false,
+          error: 'Unable to load real cricket data. Using sample data for demonstration.'
+        }));
+      }
+    };
+
+    loadRealData();
   }, []);
 
-  const loadInitialData = async () => {
-    try {
-      setLoading(true);
-      
-      // For demo purposes, using mock data since SportMonks API requires authentication
-      const mockTeams = [
-        { id: 1, name: 'India', code: 'IND' },
-        { id: 2, name: 'Australia', code: 'AUS' },
-        { id: 3, name: 'England', code: 'ENG' },
-        { id: 4, name: 'Pakistan', code: 'PAK' },
-        { id: 5, name: 'South Africa', code: 'SA' },
-        { id: 6, name: 'New Zealand', code: 'NZ' },
-        { id: 7, name: 'West Indies', code: 'WI' },
-        { id: 8, name: 'Sri Lanka', code: 'SL' },
-        { id: 9, name: 'Bangladesh', code: 'BAN' },
-        { id: 10, name: 'Afghanistan', code: 'AFG' },
-      ];
+  // Generate mock venues if no real data
+  const generateMockVenues = () => [
+    { id: 1, name: 'Melbourne Cricket Ground (MCG)' },
+    { id: 2, name: 'Lord\'s Cricket Ground' },
+    { id: 3, name: 'Eden Gardens' },
+    { id: 4, name: 'Wankhede Stadium' },
+    { id: 5, name: 'Sydney Cricket Ground (SCG)' },
+    { id: 6, name: 'The Oval' },
+    { id: 7, name: 'Old Trafford' },
+    { id: 8, name: 'Newlands' }
+  ];
 
-      const mockVenues = [
-        { id: 1, name: 'Lord\'s', city: 'London', country: 'England' },
-        { id: 2, name: 'Eden Gardens', city: 'Kolkata', country: 'India' },
-        { id: 3, name: 'MCG', city: 'Melbourne', country: 'Australia' },
-        { id: 4, name: 'The Oval', city: 'London', country: 'England' },
-        { id: 5, name: 'Wankhede Stadium', city: 'Mumbai', country: 'India' },
-        { id: 6, name: 'Sydney Cricket Ground', city: 'Sydney', country: 'Australia' },
-        { id: 7, name: 'Newlands', city: 'Cape Town', country: 'South Africa' },
-        { id: 8, name: 'Basin Reserve', city: 'Wellington', country: 'New Zealand' },
-      ];
+  // Get available teams and venues
+  const availableTeams = realData.teams.length > 0 ? realData.teams : [
+    { id: 1, name: 'India', code: 'IND' },
+    { id: 2, name: 'Australia', code: 'AUS' },
+    { id: 3, name: 'England', code: 'ENG' },
+    { id: 4, name: 'New Zealand', code: 'NZ' },
+    { id: 5, name: 'South Africa', code: 'SA' },
+    { id: 6, name: 'Pakistan', code: 'PAK' },
+    { id: 7, name: 'West Indies', code: 'WI' },
+    { id: 8, name: 'Sri Lanka', code: 'SL' }
+  ];
 
-      setTeams(mockTeams);
-      setVenues(mockVenues);
-    } catch (err) {
-      setError('Failed to load initial data');
-      console.error('Error loading initial data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Sort teams by ranking for better UX
+  const sortedTeams = availableTeams.sort((a, b) => {
+    const rankingA = a.ranking || 99;
+    const rankingB = b.ranking || 99;
+    return rankingA - rankingB;
+  });
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+  // Group teams by status
+  const internationalTeams = sortedTeams.filter(team => team.national_team !== false && (team.ranking || 99) <= 14);
+  const liveDataTeams = sortedTeams.filter(team => team.has_real_data && !internationalTeams.includes(team));
+
+  const availableVenues = realData.venues.length > 0 ? realData.venues : generateMockVenues();
+
+  const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [field]: value
     }));
+    
+    // Clear prediction when form changes
+    if (prediction) {
+      setPrediction(null);
+    }
   };
 
   const handlePredict = async (e) => {
@@ -90,44 +117,30 @@ const MatchPredictor = () => {
       return;
     }
 
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Mock prediction for demo (replace with actual API call)
-      const mockPrediction = {
-        winner: Math.random() > 0.5 ? formData.teamA : formData.teamB,
-        probability: Math.round((Math.random() * 0.4 + 0.5) * 100), // 50-90%
-        confidence: 'High',
-        factors: [
-          { name: 'Team Form', impact: Math.round(Math.random() * 30 + 20) },
-          { name: 'Venue Advantage', impact: Math.round(Math.random() * 25 + 10) },
-          { name: 'Toss Factor', impact: Math.round(Math.random() * 15 + 5) },
-          { name: 'Head to Head', impact: Math.round(Math.random() * 20 + 10) },
-        ]
-      };
+    setLoading(true);
+    setError(null);
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setPrediction(mockPrediction);
+    try {
+      const result = await predictMatch(formData);
+      setPrediction(result);
     } catch (err) {
-      setError('Failed to predict match outcome');
+      setError('Failed to get prediction. Please try again.');
       console.error('Prediction error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const getTeamName = (teamId) => {
-    const team = teams.find(t => t.id.toString() === teamId);
-    return team ? team.name : teamId;
-  };
-
-  const getVenueName = (venueId) => {
-    const venue = venues.find(v => v.id.toString() === venueId);
-    return venue ? `${venue.name}, ${venue.city}` : venueId;
-  };
+  if (realData.loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="w-8 h-8 animate-spin text-cricket-green" />
+          <span className="text-lg text-gray-600 dark:text-gray-300">Loading real cricket data...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -140,34 +153,67 @@ const MatchPredictor = () => {
           Match Outcome Predictor
         </h1>
         <p className="text-lg text-gray-600 dark:text-gray-300">
-          Select match details to predict the winner using our ML model
+          Predict cricket match outcomes using {availableTeams.length} real teams and advanced ML models
         </p>
       </div>
 
+      {/* Real Data Status */}
+      {realData.error && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-yellow-400 mr-3" />
+            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+              {realData.error}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!realData.error && (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+          <div className="flex items-center">
+            <Trophy className="h-5 w-5 text-green-400 mr-3" />
+            <p className="text-sm text-green-700 dark:text-green-300">
+              ✅ Real cricket data loaded: {availableTeams.length} teams, {availableVenues.length} venues from CricketData.org API
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Prediction Form */}
-        <Card title="Match Details" subtitle="Configure match parameters for prediction">
+        <Card title="Match Details" subtitle="Select teams and match conditions for prediction">
           <form onSubmit={handlePredict} className="space-y-6">
             {/* Teams Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <Users className="inline h-4 w-4 mr-1" />
-                  Team A
+                  Team A ({internationalTeams.length} international teams)
                 </label>
                 <select
-                  name="teamA"
                   value={formData.teamA}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('teamA', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-cricket-green-500 focus:border-cricket-green-500 dark:bg-gray-700 dark:text-white"
                   required
                 >
                   <option value="">Select Team A</option>
-                  {teams.map(team => (
-                    <option key={team.id} value={team.id}>
-                      {team.name} ({team.code})
-                    </option>
-                  ))}
+                  <optgroup label="🏏 International Cricket Teams">
+                    {internationalTeams.map(team => (
+                      <option key={team.id} value={team.name}>
+                        {team.ranking}. {team.name} ({team.code}) {team.has_real_data ? '🔴' : ''}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {liveDataTeams.length > 0 && (
+                    <optgroup label="🔴 Live Tournament Teams">
+                      {liveDataTeams.map(team => (
+                        <option key={team.id} value={team.name}>
+                          {team.name} ({team.code}) 🔴
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 
@@ -177,57 +223,50 @@ const MatchPredictor = () => {
                   Team B
                 </label>
                 <select
-                  name="teamB"
                   value={formData.teamB}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('teamB', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-cricket-green-500 focus:border-cricket-green-500 dark:bg-gray-700 dark:text-white"
                   required
                 >
                   <option value="">Select Team B</option>
-                  {teams.map(team => (
-                    <option key={team.id} value={team.id}>
-                      {team.name} ({team.code})
-                    </option>
-                  ))}
+                  <optgroup label="🏏 International Cricket Teams">
+                    {internationalTeams.filter(team => team.name !== formData.teamA).map(team => (
+                      <option key={team.id} value={team.name}>
+                        {team.ranking}. {team.name} ({team.code}) {team.has_real_data ? '🔴' : ''}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {liveDataTeams.length > 0 && (
+                    <optgroup label="🔴 Live Tournament Teams">
+                      {liveDataTeams.filter(team => team.name !== formData.teamA).map(team => (
+                        <option key={team.id} value={team.name}>
+                          {team.name} ({team.code}) 🔴
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
             </div>
 
-            {/* Venue */}
+            {/* Venue Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <MapPin className="inline h-4 w-4 mr-1" />
-                Venue
+                Venue ({availableVenues.length} available)
               </label>
               <select
-                name="venue"
                 value={formData.venue}
-                onChange={handleInputChange}
+                onChange={(e) => handleInputChange('venue', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-cricket-green-500 focus:border-cricket-green-500 dark:bg-gray-700 dark:text-white"
+                required
               >
                 <option value="">Select Venue</option>
-                {venues.map(venue => (
-                  <option key={venue.id} value={venue.id}>
-                    {venue.name} - {venue.city}, {venue.country}
+                {availableVenues.map(venue => (
+                  <option key={venue.id} value={venue.name}>
+                    {venue.name}
                   </option>
                 ))}
-              </select>
-            </div>
-
-            {/* Match Type */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Match Type
-              </label>
-              <select
-                name="matchType"
-                value={formData.matchType}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-cricket-green-500 focus:border-cricket-green-500 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="T20">T20</option>
-                <option value="ODI">ODI</option>
-                <option value="Test">Test</option>
               </select>
             </div>
 
@@ -238,14 +277,14 @@ const MatchPredictor = () => {
                   Toss Winner
                 </label>
                 <select
-                  name="tossWinner"
                   value={formData.tossWinner}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('tossWinner', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-cricket-green-500 focus:border-cricket-green-500 dark:bg-gray-700 dark:text-white"
+                  required
                 >
                   <option value="">Select Toss Winner</option>
-                  {formData.teamA && <option value={formData.teamA}>{getTeamName(formData.teamA)}</option>}
-                  {formData.teamB && <option value={formData.teamB}>{getTeamName(formData.teamB)}</option>}
+                  {formData.teamA && <option value={formData.teamA}>{formData.teamA}</option>}
+                  {formData.teamB && <option value={formData.teamB}>{formData.teamB}</option>}
                 </select>
               </div>
 
@@ -254,9 +293,8 @@ const MatchPredictor = () => {
                   Toss Decision
                 </label>
                 <select
-                  name="tossDecision"
                   value={formData.tossDecision}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('tossDecision', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-cricket-green-500 focus:border-cricket-green-500 dark:bg-gray-700 dark:text-white"
                 >
                   <option value="bat">Bat First</option>
@@ -265,28 +303,51 @@ const MatchPredictor = () => {
               </div>
             </div>
 
+            {/* Match Type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <Calendar className="inline h-4 w-4 mr-1" />
+                Match Type
+              </label>
+              <select
+                value={formData.matchType}
+                onChange={(e) => handleInputChange('matchType', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-cricket-green-500 focus:border-cricket-green-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="t20">T20</option>
+                <option value="odi">ODI</option>
+                <option value="test">Test</option>
+              </select>
+            </div>
+
             {/* Error Display */}
             {error && (
-              <div className="flex items-center p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-md">
-                <AlertCircle className="h-5 w-5 mr-2" />
-                {error}
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
-              className="w-full flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-cricket-green-600 hover:bg-cricket-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cricket-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              disabled={loading || !formData.teamA || !formData.teamB}
+              className="w-full bg-cricket-green-600 hover:bg-cricket-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-md transition duration-200 flex items-center justify-center"
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
                   Predicting...
                 </>
               ) : (
                 <>
-                  <Target className="h-4 w-4 mr-2" />
+                  <Target className="w-5 h-5 mr-2" />
                   Predict Match Outcome
                 </>
               )}
@@ -295,25 +356,28 @@ const MatchPredictor = () => {
         </Card>
 
         {/* Prediction Results */}
-        <Card title="Prediction Results" subtitle="AI-powered match outcome prediction">
-          {prediction ? (
+        {prediction && (
+          <Card 
+            title="Prediction Results" 
+            subtitle={`Analysis for ${formData.teamA} vs ${formData.teamB}`}
+          >
             <div className="space-y-6">
               {/* Winner */}
-              <div className="text-center p-6 bg-gradient-to-r from-cricket-green-50 to-cricket-blue-50 dark:from-cricket-green-900/20 dark:to-cricket-blue-900/20 rounded-lg">
-                <Trophy className="h-12 w-12 text-cricket-gold-500 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Predicted Winner
-                </h3>
-                <p className="text-3xl font-bold text-cricket-green-600 mb-2">
-                  {getTeamName(prediction.winner)}
-                </p>
-                <div className="flex justify-center items-center space-x-4">
-                  <span className="text-lg text-gray-600 dark:text-gray-300">
-                    Win Probability: <strong>{prediction.probability}%</strong>
-                  </span>
-                  <span className="px-3 py-1 bg-cricket-green-100 dark:bg-cricket-green-800 text-cricket-green-800 dark:text-cricket-green-200 rounded-full text-sm font-medium">
-                    {prediction.confidence} Confidence
-                  </span>
+              <div className="text-center">
+                <div className="bg-cricket-green-50 dark:bg-cricket-green-900/20 rounded-lg p-6">
+                  <Trophy className="h-12 w-12 text-cricket-green-600 mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold text-cricket-green-800 dark:text-cricket-green-300 mb-2">
+                    Predicted Winner
+                  </h3>
+                  <p className="text-3xl font-bold text-cricket-green-900 dark:text-cricket-green-100">
+                    {prediction.winner}
+                  </p>
+                  <p className="text-lg text-cricket-green-700 dark:text-cricket-green-400 mt-2">
+                    {prediction.probability}% probability
+                  </p>
+                  <p className="text-sm text-cricket-green-600 dark:text-cricket-green-500">
+                    Confidence: {prediction.confidence}
+                  </p>
                 </div>
               </div>
 
@@ -324,19 +388,19 @@ const MatchPredictor = () => {
                   Key Factors
                 </h4>
                 <div className="space-y-3">
-                  {prediction.factors.map((factor, index) => (
+                  {prediction.factors?.map((factor, index) => (
                     <div key={index} className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         {factor.name}
                       </span>
                       <div className="flex items-center space-x-2">
                         <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                           <div
-                            className="bg-cricket-green-500 h-2 rounded-full"
+                            className="bg-cricket-green-600 h-2 rounded-full"
                             style={{ width: `${factor.impact}%` }}
                           ></div>
                         </div>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white w-8">
+                        <span className="text-sm text-gray-600 dark:text-gray-400 w-8">
                           {factor.impact}%
                         </span>
                       </div>
@@ -345,30 +409,20 @@ const MatchPredictor = () => {
                 </div>
               </div>
 
-              {/* Match Summary */}
-              {formData.teamA && formData.teamB && (
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Match Summary</h4>
-                  <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                    <p><strong>Teams:</strong> {getTeamName(formData.teamA)} vs {getTeamName(formData.teamB)}</p>
-                    {formData.venue && <p><strong>Venue:</strong> {getVenueName(formData.venue)}</p>}
-                    <p><strong>Format:</strong> {formData.matchType}</p>
-                    {formData.tossWinner && (
-                      <p><strong>Toss:</strong> {getTeamName(formData.tossWinner)} won and chose to {formData.tossDecision} first</p>
-                    )}
-                  </div>
+              {/* Model Info */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                  Model Information
+                </h4>
+                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                  <p>Model Version: {prediction.model_version}</p>
+                  <p>Prediction Time: {new Date(prediction.prediction_time).toLocaleString()}</p>
+                  <p>Using {realData.teams.length > 0 ? 'Real' : 'Sample'} Team Data</p>
                 </div>
-              )}
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-12">
-              <Target className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">
-                Fill in the match details and click "Predict Match Outcome" to see the AI prediction
-              </p>
-            </div>
-          )}
-        </Card>
+          </Card>
+        )}
       </div>
     </div>
   );

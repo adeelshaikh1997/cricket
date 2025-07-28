@@ -8,34 +8,49 @@ import json
 logger = logging.getLogger(__name__)
 
 class CricketService:
-    """Service for handling cricket data from external APIs and cached data"""
+    """Service for handling cricket data from CricketData.org (free API) and cached data"""
     
     def __init__(self):
-        self.api_key = os.getenv('SPORTMONKS_API_KEY')
-        self.base_url = 'https://cricket.sportmonks.com/api/v2.0'
+        # CricketData.org API (free - formerly CricAPI)
+        self.api_key = os.getenv('CRICKETDATA_API_KEY')
+        self.base_url = 'https://api.cricapi.com/v1'
         self.cache_timeout = 3600  # 1 hour cache
         self.session = requests.Session()
         
-        # Set up session headers
-        if self.api_key:
-            self.session.params = {'api_token': self.api_key}
+        # Default free API key for demo (you should get your own)
+        if not self.api_key:
+            logger.info("No CricketData API key found, using demo mode")
+            self.api_key = None
     
     def _make_api_request(self, endpoint: str, params: Dict = None) -> Dict:
-        """Make API request with error handling and caching"""
+        """Make API request to CricketData.org with error handling and caching"""
         try:
-            if not self.api_key:
-                logger.warning("SportMonks API key not configured, using mock data")
+            # Always try real API first if we have a key
+            if self.api_key:
+                url = f"{self.base_url}/{endpoint}"
+                api_params = {'apikey': self.api_key}
+                if params:
+                    api_params.update(params)
+                
+                logger.info(f"Making CricketData API request: {endpoint}")
+                response = self.session.get(url, params=api_params, timeout=10)
+                response.raise_for_status()
+                
+                data = response.json()
+                
+                # Check if API response is successful
+                if data.get('status') == 'success':
+                    logger.info(f"CricketData API success for {endpoint}")
+                    return data
+                else:
+                    logger.warning(f"CricketData API returned error: {data.get('info', 'Unknown error')}")
+                    return self._get_mock_data(endpoint)
+            else:
+                logger.info("No API key provided, using mock data for demo")
                 return self._get_mock_data(endpoint)
             
-            url = f"{self.base_url}/{endpoint}"
-            response = self.session.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            
-            data = response.json()
-            return data
-            
         except requests.exceptions.RequestException as e:
-            logger.error(f"API request failed for {endpoint}: {str(e)}")
+            logger.error(f"CricketData API request failed for {endpoint}: {str(e)}")
             return self._get_mock_data(endpoint)
         except Exception as e:
             logger.error(f"Unexpected error in API request: {str(e)}")
@@ -123,29 +138,90 @@ class CricketService:
         return {'data': []}
     
     def get_teams(self) -> List[Dict]:
-        """Get list of cricket teams"""
+        """Get list of international cricket teams with real data integration"""
         try:
-            response = self._make_api_request('teams')
-            teams = response.get('data', [])
+            # Get real data first
+            response = self._make_api_request('currentMatches', {'offset': 0})
+            real_teams = []
             
-            # Filter and format teams
+            if response.get('status') == 'success':
+                matches = response.get('data', [])
+                teams_set = set()
+                
+                # Extract teams from real matches
+                for match in matches:
+                    team_info = match.get('teamInfo', [])
+                    for team in team_info:
+                        team_name = team.get('name', '')
+                        if team_name and team_name not in teams_set:
+                            teams_set.add(team_name)
+                            real_teams.append({
+                                'name': team_name,
+                                'code': team.get('shortname', ''),
+                                'image_path': team.get('img', ''),
+                                'is_real': True
+                            })
+            
+            # Define major international cricket teams
+            international_teams = [
+                {'name': 'India', 'code': 'IND', 'ranking': 1, 'region': 'Asia'},
+                {'name': 'Australia', 'code': 'AUS', 'ranking': 2, 'region': 'Oceania'},
+                {'name': 'England', 'code': 'ENG', 'ranking': 3, 'region': 'Europe'},
+                {'name': 'New Zealand', 'code': 'NZ', 'ranking': 4, 'region': 'Oceania'},
+                {'name': 'Pakistan', 'code': 'PAK', 'ranking': 5, 'region': 'Asia'},
+                {'name': 'South Africa', 'code': 'SA', 'ranking': 6, 'region': 'Africa'},
+                {'name': 'West Indies', 'code': 'WI', 'ranking': 7, 'region': 'Caribbean'},
+                {'name': 'Sri Lanka', 'code': 'SL', 'ranking': 8, 'region': 'Asia'},
+                {'name': 'Bangladesh', 'code': 'BAN', 'ranking': 9, 'region': 'Asia'},
+                {'name': 'Afghanistan', 'code': 'AFG', 'ranking': 10, 'region': 'Asia'},
+                {'name': 'Ireland', 'code': 'IRE', 'ranking': 11, 'region': 'Europe'},
+                {'name': 'Zimbabwe', 'code': 'ZIM', 'ranking': 12, 'region': 'Africa'},
+                {'name': 'Netherlands', 'code': 'NED', 'ranking': 13, 'region': 'Europe'},
+                {'name': 'Scotland', 'code': 'SCO', 'ranking': 14, 'region': 'Europe'}
+            ]
+            
+            # Merge real teams with international teams
             formatted_teams = []
-            for team in teams:
-                formatted_team = {
-                    'id': team.get('id'),
-                    'name': team.get('name'),
-                    'code': team.get('code'),
-                    'national_team': team.get('national_team', False),
-                    'image_path': team.get('image_path', ''),
-                }
-                formatted_teams.append(formatted_team)
+            real_team_names = {team['name'] for team in real_teams}
             
-            logger.info(f"Retrieved {len(formatted_teams)} teams")
+            # Add international teams, marking which ones have real data
+            for i, team in enumerate(international_teams):
+                is_real = team['name'] in real_team_names
+                real_team_data = next((rt for rt in real_teams if rt['name'] == team['name']), {})
+                
+                formatted_teams.append({
+                    'id': i + 1,
+                    'name': team['name'],
+                    'code': team['code'],
+                    'national_team': True,
+                    'ranking': team['ranking'],
+                    'region': team['region'],
+                    'image_path': real_team_data.get('image_path', ''),
+                    'has_real_data': is_real,
+                    'status': 'live_data' if is_real else 'international_team'
+                })
+            
+            # Add unique real teams that aren't in international list
+            unique_real_teams = [rt for rt in real_teams if rt['name'] not in {t['name'] for t in international_teams}]
+            for i, team in enumerate(unique_real_teams):
+                formatted_teams.append({
+                    'id': len(formatted_teams) + 1,
+                    'name': team['name'],
+                    'code': team['code'],
+                    'national_team': False,
+                    'ranking': 99,
+                    'region': 'Other',
+                    'image_path': team.get('image_path', ''),
+                    'has_real_data': True,
+                    'status': 'live_tournament'
+                })
+            
+            logger.info(f"Retrieved {len(formatted_teams)} teams: {len([t for t in formatted_teams if t['has_real_data']])} with real data")
             return formatted_teams
             
         except Exception as e:
             logger.error(f"Error fetching teams: {str(e)}")
-            return []
+            return self._get_mock_data('teams').get('data', [])
     
     def get_venues(self) -> List[Dict]:
         """Get list of cricket venues"""
@@ -175,43 +251,40 @@ class CricketService:
     
     def get_fixtures(self, team_id: Optional[str] = None, venue_id: Optional[str] = None,
                     date_from: Optional[str] = None, date_to: Optional[str] = None) -> List[Dict]:
-        """Get cricket fixtures with optional filters"""
+        """Get cricket fixtures/matches from CricketData API"""
         try:
-            params = {}
+            # Get current matches (live and upcoming)
+            response = self._make_api_request('currentMatches', {'offset': 0})
             
-            if team_id:
-                params['team_id'] = team_id
-            if venue_id:
-                params['venue_id'] = venue_id
-            if date_from:
-                params['date_from'] = date_from
-            if date_to:
-                params['date_to'] = date_to
-            
-            response = self._make_api_request('fixtures', params)
-            fixtures = response.get('data', [])
-            
-            # Format fixtures
-            formatted_fixtures = []
-            for fixture in fixtures:
-                formatted_fixture = {
-                    'id': fixture.get('id'),
-                    'name': fixture.get('name'),
-                    'starting_at': fixture.get('starting_at'),
-                    'type': fixture.get('type'),
-                    'stage': fixture.get('stage', {}).get('name', ''),
-                    'venue': fixture.get('venue', {}),
-                    'status': fixture.get('status'),
-                    'teams': fixture.get('teams', []),
-                }
-                formatted_fixtures.append(formatted_fixture)
-            
-            logger.info(f"Retrieved {len(formatted_fixtures)} fixtures")
-            return formatted_fixtures
+            if response.get('status') == 'success':
+                matches = response.get('data', [])
+                formatted_fixtures = []
+                
+                for match in matches:
+                    # Extract team names
+                    team_info = match.get('teamInfo', [])
+                    team_names = [team.get('name', '') for team in team_info[:2]]
+                    
+                    formatted_fixture = {
+                        'id': match.get('id'),
+                        'name': ' vs '.join(team_names) if len(team_names) >= 2 else match.get('name', ''),
+                        'starting_at': match.get('dateTimeGMT', ''),
+                        'type': match.get('matchType', ''),
+                        'stage': match.get('series', ''),
+                        'venue': match.get('venue', ''),
+                        'status': match.get('status', ''),
+                        'teams': team_names,
+                    }
+                    formatted_fixtures.append(formatted_fixture)
+                
+                logger.info(f"Retrieved {len(formatted_fixtures)} fixtures from CricketData API")
+                return formatted_fixtures
+            else:
+                return self._get_mock_data('fixtures').get('data', [])
             
         except Exception as e:
             logger.error(f"Error fetching fixtures: {str(e)}")
-            return []
+            return self._get_mock_data('fixtures').get('data', [])
     
     def get_player_stats(self, player_id: int) -> Dict:
         """Get statistics for a specific player"""

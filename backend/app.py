@@ -5,6 +5,10 @@ import os
 import logging
 from datetime import datetime
 import traceback
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from services.prediction_service import PredictionService
 from services.cricket_service import CricketService

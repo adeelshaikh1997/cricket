@@ -22,8 +22,14 @@ class PredictionService:
         try:
             model_path = os.path.join('models', 'cricket_predictor.joblib')
             if os.path.exists(model_path):
-                self.model = joblib.load(model_path)
-                logger.info("Loaded pre-trained cricket prediction model")
+                model_data = joblib.load(model_path)
+                # Extract the actual model from the saved dictionary
+                if isinstance(model_data, dict) and 'model' in model_data:
+                    self.model = model_data['model']
+                    logger.info("Loaded pre-trained cricket prediction model from dictionary")
+                else:
+                    self.model = model_data  # Fallback for direct model saves
+                    logger.info("Loaded pre-trained cricket prediction model directly")
             else:
                 logger.warning("Pre-trained model not found, using mock predictions")
                 self.model = None

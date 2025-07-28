@@ -75,3 +75,5 @@ Get your SportMonks Cricket API key from [sportmonks.com](https://sportmonks.com
 ## License
 
 This project is licensed under the MIT License. 
+
+./start.sh - script
