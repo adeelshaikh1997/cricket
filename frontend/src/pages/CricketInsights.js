@@ -13,7 +13,14 @@ import {
   Line,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  AreaChart,
+  Area,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar
 } from 'recharts';
 import { 
   BarChart3, 
@@ -33,7 +40,7 @@ const CricketInsights = () => {
   const [selectedTeam, setSelectedTeam] = useState('');
   const [selectedFormat, setSelectedFormat] = useState('all');
   const [dateRange, setDateRange] = useState('last6months');
-  
+
   // Real data state
   const [realData, setRealData] = useState({
     teams: [],
@@ -71,6 +78,8 @@ const CricketInsights = () => {
 
     loadRealData();
   }, []);
+
+
 
   // Generate insights from real data
   const generateTeamInsights = () => {
@@ -578,6 +587,28 @@ const CricketInsights = () => {
             ))}
         </div>
       </Card>
+
+      {/* Player Deep Dive Analysis Section */}
+      {selectedFilter === 'player-analysis' && (
+        <div className="space-y-6">
+          {/* This section has been moved to a separate page: /player-analysis */}
+          <Card title="🏏 Player Deep Dive Moved!" subtitle="This feature is now available as a separate page">
+            <div className="text-center py-8">
+              <div className="text-6xl mb-4">🚀</div>
+              <h3 className="text-xl font-semibold mb-2">Player Deep Dive is now a separate page!</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                For the best experience, visit the dedicated Player Deep Dive page.
+              </p>
+              <a 
+                href="/player-analysis" 
+                className="inline-flex items-center px-4 py-2 bg-cricket-green-600 text-white rounded-lg hover:bg-cricket-green-700 transition-colors"
+              >
+                Go to Player Deep Dive →
+              </a>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

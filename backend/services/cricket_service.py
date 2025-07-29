@@ -1,30 +1,77 @@
 import os
-import logging
 import requests
-from typing import Dict, List, Any, Optional
+import logging
+from typing import Dict, List, Optional
+import time
 from datetime import datetime, timedelta
 import json
 
 logger = logging.getLogger(__name__)
 
 class CricketService:
-    """Service for handling cricket data from CricketData.org (free API) and cached data"""
-    
     def __init__(self):
-        # CricketData.org API (free - formerly CricAPI)
+        self.base_url = "https://cricapi.com/api"
         self.api_key = os.getenv('CRICKETDATA_API_KEY')
-        self.base_url = 'https://api.cricapi.com/v1'
-        self.cache_timeout = 3600  # 1 hour cache
         self.session = requests.Session()
+        
+        # Add caching and rate limiting
+        self._cache = {}
+        self._cache_duration = 3600  # 1 hour cache
+        self._last_api_call = 0
+        self._min_call_interval = 1  # Minimum 1 second between calls
+        self._daily_calls = 0
+        self._daily_limit = 95  # Leave some buffer below 100
+        self._calls_reset_time = None
         
         # Default free API key for demo (you should get your own)
         if not self.api_key:
             logger.info("No CricketData API key found, using demo mode")
             self.api_key = None
     
+    def _check_cache(self, cache_key: str) -> Optional[Dict]:
+        """Check if we have cached data that's still valid"""
+        if cache_key in self._cache:
+            cached_data, timestamp = self._cache[cache_key]
+            if time.time() - timestamp < self._cache_duration:
+                logger.info(f"Using cached data for {cache_key}")
+                return cached_data
+        return None
+    
+    def _store_cache(self, cache_key: str, data: Dict):
+        """Store data in cache with timestamp"""
+        self._cache[cache_key] = (data, time.time())
+    
+    def _can_make_api_call(self) -> bool:
+        """Check if we can make an API call without hitting limits"""
+        now = time.time()
+        
+        # Check if we need to wait between calls
+        if now - self._last_api_call < self._min_call_interval:
+            return False
+            
+        # Check daily limit
+        if self._daily_calls >= self._daily_limit:
+            logger.warning(f"Daily API limit reached ({self._daily_calls}/{self._daily_limit})")
+            return False
+            
+        return True
+    
     def _make_api_request(self, endpoint: str, params: Dict = None) -> Dict:
-        """Make API request to CricketData.org with error handling and caching"""
+        """Make API request to CricketData.org with caching and rate limiting"""
         try:
+            # Create cache key
+            cache_key = f"{endpoint}_{params or {}}"
+            
+            # Check cache first
+            cached_data = self._check_cache(cache_key)
+            if cached_data:
+                return cached_data
+            
+            # Check if we can make API call
+            if not self._can_make_api_call():
+                logger.warning("Cannot make API call due to rate limiting, using fallback")
+                return self._get_mock_data(endpoint)
+            
             # Always try real API first if we have a key
             if self.api_key:
                 url = f"{self.base_url}/{endpoint}"
@@ -33,6 +80,11 @@ class CricketService:
                     api_params.update(params)
                 
                 logger.info(f"Making CricketData API request: {endpoint}")
+                
+                # Update rate limiting counters
+                self._last_api_call = time.time()
+                self._daily_calls += 1
+                
                 response = self.session.get(url, params=api_params, timeout=10)
                 response.raise_for_status()
                 
@@ -41,9 +93,16 @@ class CricketService:
                 # Check if API response is successful
                 if data.get('status') == 'success':
                     logger.info(f"CricketData API success for {endpoint}")
+                    self._store_cache(cache_key, data)  # Cache successful responses
                     return data
                 else:
-                    logger.warning(f"CricketData API returned error: {data.get('info', 'Unknown error')}")
+                    error_info = data.get('info', data)
+                    logger.warning(f"CricketData API returned error: {error_info}")
+                    
+                    # If it's a rate limit error, increase our counter
+                    if isinstance(error_info, dict) and 'hitsLimit' in str(error_info):
+                        self._daily_calls = self._daily_limit  # Mark as limit reached
+                    
                     return self._get_mock_data(endpoint)
             else:
                 logger.info("No API key provided, using mock data for demo")
@@ -333,6 +392,473 @@ class CricketService:
         except Exception as e:
             logger.error(f"Error fetching team stats for {team_id}: {str(e)}")
             return {}
+    
+    def get_players(self, team_id: Optional[str] = None) -> List[Dict]:
+        """Get cricket players from CricketData API players endpoint"""
+        try:
+            players = []
+            
+            # Try to get real players from CricketData API players endpoint
+            if self.api_key:
+                try:
+                    logger.info("Fetching players from CricketData.org players API")
+                    response = self._make_api_request('players')
+                    
+                    if response.get('status') == 'success':
+                        api_players = response.get('data', [])
+                        logger.info(f"Retrieved {len(api_players)} players from CricketData API")
+                        
+                        # Format players from API response
+                        for i, player_data in enumerate(api_players):
+                            try:
+                                # Handle CricketData.org API structure: {id, name, country}
+                                if isinstance(player_data, dict):
+                                    player_name = player_data.get('name', player_data.get('fullname', f'Player {i+1}'))
+                                    country = player_data.get('country', 'Unknown')
+                                    player_id = player_data.get('id', i + 1)
+                                    
+                                    # Use country as team since CricketData.org doesn't provide team info
+                                    team_name = country
+                                    team_code = country[:3].upper() if country else 'UNK'
+                                    
+                                    # Filter by team if specified
+                                    if team_id and (team_code.lower() != team_id.lower() and team_name.lower() != team_id.lower()):
+                                        continue
+                                    
+                                    formatted_player = {
+                                        'id': player_id,
+                                        'fullname': player_name,
+                                        'firstname': player_name.split(' ')[0] if player_name else '',
+                                        'lastname': ' '.join(player_name.split(' ')[1:]) if player_name and len(player_name.split(' ')) > 1 else '',
+                                        'team': team_name,
+                                        'team_code': team_code,
+                                        'position': {'name': 'Player'},  # Default since API doesn't provide role
+                                        'battingstyle': 'Right-hand bat',  # Default
+                                        'bowlingstyle': '',
+                                        'country': {'name': country, 'code': team_code},
+                                        'image_path': '',
+                                        'ranking': 99,  # Default
+                                        'is_international': True,
+                                        'status': 'active'
+                                    }
+                                    players.append(formatted_player)
+                                elif isinstance(player_data, str):
+                                    # Handle string format (shouldn't happen with this API)
+                                    formatted_player = {
+                                        'id': i + 1,
+                                        'fullname': player_data,
+                                        'firstname': player_data.split(' ')[0] if player_data else '',
+                                        'lastname': ' '.join(player_data.split(' ')[1:]) if player_data and len(player_data.split(' ')) > 1 else '',
+                                        'team': 'Unknown',
+                                        'team_code': 'UNK',
+                                        'position': {'name': 'Player'},
+                                        'battingstyle': 'Right-hand bat',
+                                        'bowlingstyle': '',
+                                        'country': {'name': 'Unknown', 'code': 'UNK'},
+                                        'image_path': '',
+                                        'ranking': 99,
+                                        'is_international': True,
+                                        'status': 'active'
+                                    }
+                                    players.append(formatted_player)
+                                    
+                            except Exception as e:
+                                logger.warning(f"Error processing player data at index {i}: {str(e)}")
+                                continue
+                        
+                        if players:
+                            logger.info(f"Successfully formatted {len(players)} players from CricketData API")
+                            
+                            # Combine API players with major international players for comprehensive coverage
+                            major_international_players = [
+                                # India - Top players
+                                {'name': 'Virat Kohli', 'team': 'India', 'team_code': 'IND', 'role': 'Batsman', 'ranking': 1},
+                                {'name': 'Rohit Sharma', 'team': 'India', 'team_code': 'IND', 'role': 'Batsman', 'ranking': 1},
+                                {'name': 'KL Rahul', 'team': 'India', 'team_code': 'IND', 'role': 'Wicket-keeper', 'ranking': 1},
+                                {'name': 'Hardik Pandya', 'team': 'India', 'team_code': 'IND', 'role': 'All-rounder', 'ranking': 1},
+                                {'name': 'Jasprit Bumrah', 'team': 'India', 'team_code': 'IND', 'role': 'Bowler', 'ranking': 1},
+                                
+                                # Australia - Top players
+                                {'name': 'Steve Smith', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Batsman', 'ranking': 2},
+                                {'name': 'David Warner', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Batsman', 'ranking': 2},
+                                {'name': 'Pat Cummins', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Bowler', 'ranking': 2},
+                                {'name': 'Glenn Maxwell', 'team': 'Australia', 'team_code': 'AUS', 'role': 'All-rounder', 'ranking': 2},
+                                
+                                # England - Top players
+                                {'name': 'Joe Root', 'team': 'England', 'team_code': 'ENG', 'role': 'Batsman', 'ranking': 3},
+                                {'name': 'Ben Stokes', 'team': 'England', 'team_code': 'ENG', 'role': 'All-rounder', 'ranking': 3},
+                                {'name': 'Jos Buttler', 'team': 'England', 'team_code': 'ENG', 'role': 'Wicket-keeper', 'ranking': 3},
+                                
+                                # New Zealand - Top players
+                                {'name': 'Kane Williamson', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Batsman', 'ranking': 4},
+                                {'name': 'Trent Boult', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Bowler', 'ranking': 4},
+                                
+                                # Pakistan - Top players
+                                {'name': 'Babar Azam', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Batsman', 'ranking': 5},
+                                {'name': 'Shaheen Afridi', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Bowler', 'ranking': 5},
+                                
+                                # South Africa - Top players
+                                {'name': 'Quinton de Kock', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Wicket-keeper', 'ranking': 6},
+                                {'name': 'Kagiso Rabada', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Bowler', 'ranking': 6},
+                            ]
+                            
+                            # Add major international players to the API players
+                            for i, major_player in enumerate(major_international_players):
+                                # Skip if team filter specified and doesn't match
+                                if team_id and (major_player['team_code'].lower() != team_id.lower() and major_player['team'].lower() != team_id.lower()):
+                                    continue
+                                    
+                                formatted_player = {
+                                    'id': f"major_{i + 1}",
+                                    'fullname': major_player['name'],
+                                    'firstname': major_player['name'].split(' ')[0],
+                                    'lastname': ' '.join(major_player['name'].split(' ')[1:]) if len(major_player['name'].split(' ')) > 1 else '',
+                                    'team': major_player['team'],
+                                    'team_code': major_player['team_code'],
+                                    'position': {'name': major_player['role']},
+                                    'battingstyle': 'Right-hand bat',
+                                    'bowlingstyle': 'Right-arm medium' if major_player['role'] == 'Bowler' else '',
+                                    'country': {'name': major_player['team'], 'code': major_player['team_code']},
+                                    'image_path': '',
+                                    'ranking': major_player['ranking'],
+                                    'is_international': True,
+                                    'status': 'active'
+                                }
+                                players.append(formatted_player)
+                            
+                            logger.info(f"Combined {len(players)} total players: CricketData API + major international players")
+                            return players
+                        else:
+                            logger.warning("No players found in API response, falling back to comprehensive list")
+                    else:
+                        logger.warning(f"CricketData players API returned: {response.get('info', 'Unknown error')}")
+                        
+                except Exception as e:
+                    logger.error(f"Error fetching players from CricketData API: {str(e)}")
+            else:
+                logger.info("No API key provided, using comprehensive international players list")
+
+            # Comprehensive international cricket players database (fallback)
+            international_players = [
+                # India (IND) - Extended Squad
+                {'name': 'Virat Kohli', 'team': 'India', 'team_code': 'IND', 'role': 'Batsman', 'ranking': 1},
+                {'name': 'Rohit Sharma', 'team': 'India', 'team_code': 'IND', 'role': 'Batsman', 'ranking': 1},
+                {'name': 'KL Rahul', 'team': 'India', 'team_code': 'IND', 'role': 'Wicket-keeper', 'ranking': 1},
+                {'name': 'Hardik Pandya', 'team': 'India', 'team_code': 'IND', 'role': 'All-rounder', 'ranking': 1},
+                {'name': 'Jasprit Bumrah', 'team': 'India', 'team_code': 'IND', 'role': 'Bowler', 'ranking': 1},
+                {'name': 'Ravindra Jadeja', 'team': 'India', 'team_code': 'IND', 'role': 'All-rounder', 'ranking': 1},
+                {'name': 'Shubman Gill', 'team': 'India', 'team_code': 'IND', 'role': 'Batsman', 'ranking': 1},
+                {'name': 'Rishabh Pant', 'team': 'India', 'team_code': 'IND', 'role': 'Wicket-keeper', 'ranking': 1},
+                {'name': 'Mohammed Shami', 'team': 'India', 'team_code': 'IND', 'role': 'Bowler', 'ranking': 1},
+                {'name': 'Kuldeep Yadav', 'team': 'India', 'team_code': 'IND', 'role': 'Bowler', 'ranking': 1},
+                {'name': 'Ravichandran Ashwin', 'team': 'India', 'team_code': 'IND', 'role': 'Bowler', 'ranking': 1},
+                {'name': 'Shreyas Iyer', 'team': 'India', 'team_code': 'IND', 'role': 'Batsman', 'ranking': 1},
+                {'name': 'Ishan Kishan', 'team': 'India', 'team_code': 'IND', 'role': 'Wicket-keeper', 'ranking': 1},
+                {'name': 'Yuzvendra Chahal', 'team': 'India', 'team_code': 'IND', 'role': 'Bowler', 'ranking': 1},
+                {'name': 'Axar Patel', 'team': 'India', 'team_code': 'IND', 'role': 'All-rounder', 'ranking': 1},
+                {'name': 'Suryakumar Yadav', 'team': 'India', 'team_code': 'IND', 'role': 'Batsman', 'ranking': 1},
+                {'name': 'Deepak Chahar', 'team': 'India', 'team_code': 'IND', 'role': 'Bowler', 'ranking': 1},
+                {'name': 'Prithvi Shaw', 'team': 'India', 'team_code': 'IND', 'role': 'Batsman', 'ranking': 1},
+                {'name': 'Washington Sundar', 'team': 'India', 'team_code': 'IND', 'role': 'All-rounder', 'ranking': 1},
+                {'name': 'Sanju Samson', 'team': 'India', 'team_code': 'IND', 'role': 'Wicket-keeper', 'ranking': 1},
+                
+                # Australia (AUS) - Extended Squad
+                {'name': 'Steve Smith', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Batsman', 'ranking': 2},
+                {'name': 'David Warner', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Batsman', 'ranking': 2},
+                {'name': 'Pat Cummins', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Bowler', 'ranking': 2},
+                {'name': 'Glenn Maxwell', 'team': 'Australia', 'team_code': 'AUS', 'role': 'All-rounder', 'ranking': 2},
+                {'name': 'Josh Hazlewood', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Bowler', 'ranking': 2},
+                {'name': 'Alex Carey', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Wicket-keeper', 'ranking': 2},
+                {'name': 'Mitchell Starc', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Bowler', 'ranking': 2},
+                {'name': 'Marnus Labuschagne', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Batsman', 'ranking': 2},
+                {'name': 'Adam Zampa', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Bowler', 'ranking': 2},
+                {'name': 'Marcus Stoinis', 'team': 'Australia', 'team_code': 'AUS', 'role': 'All-rounder', 'ranking': 2},
+                {'name': 'Travis Head', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Batsman', 'ranking': 2},
+                {'name': 'Matthew Wade', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Wicket-keeper', 'ranking': 2},
+                {'name': 'Cameron Green', 'team': 'Australia', 'team_code': 'AUS', 'role': 'All-rounder', 'ranking': 2},
+                {'name': 'Mitchell Marsh', 'team': 'Australia', 'team_code': 'AUS', 'role': 'All-rounder', 'ranking': 2},
+                {'name': 'Nathan Lyon', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Bowler', 'ranking': 2},
+                {'name': 'Aaron Finch', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Batsman', 'ranking': 2},
+                {'name': 'Josh Inglis', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Wicket-keeper', 'ranking': 2},
+                {'name': 'Sean Abbott', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Bowler', 'ranking': 2},
+                {'name': 'Ashton Agar', 'team': 'Australia', 'team_code': 'AUS', 'role': 'All-rounder', 'ranking': 2},
+                {'name': 'Tim David', 'team': 'Australia', 'team_code': 'AUS', 'role': 'Batsman', 'ranking': 2},
+                
+                # England (ENG) - Extended Squad  
+                {'name': 'Joe Root', 'team': 'England', 'team_code': 'ENG', 'role': 'Batsman', 'ranking': 3},
+                {'name': 'Ben Stokes', 'team': 'England', 'team_code': 'ENG', 'role': 'All-rounder', 'ranking': 3},
+                {'name': 'Jos Buttler', 'team': 'England', 'team_code': 'ENG', 'role': 'Wicket-keeper', 'ranking': 3},
+                {'name': 'Jonny Bairstow', 'team': 'England', 'team_code': 'ENG', 'role': 'Batsman', 'ranking': 3},
+                {'name': 'James Anderson', 'team': 'England', 'team_code': 'ENG', 'role': 'Bowler', 'ranking': 3},
+                {'name': 'Stuart Broad', 'team': 'England', 'team_code': 'ENG', 'role': 'Bowler', 'ranking': 3},
+                {'name': 'Harry Brook', 'team': 'England', 'team_code': 'ENG', 'role': 'Batsman', 'ranking': 3},
+                {'name': 'Moeen Ali', 'team': 'England', 'team_code': 'ENG', 'role': 'All-rounder', 'ranking': 3},
+                {'name': 'Liam Livingstone', 'team': 'England', 'team_code': 'ENG', 'role': 'All-rounder', 'ranking': 3},
+                {'name': 'Mark Wood', 'team': 'England', 'team_code': 'ENG', 'role': 'Bowler', 'ranking': 3},
+                {'name': 'Sam Curran', 'team': 'England', 'team_code': 'ENG', 'role': 'All-rounder', 'ranking': 3},
+                {'name': 'Adil Rashid', 'team': 'England', 'team_code': 'ENG', 'role': 'Bowler', 'ranking': 3},
+                {'name': 'Jason Roy', 'team': 'England', 'team_code': 'ENG', 'role': 'Batsman', 'ranking': 3},
+                {'name': 'Eoin Morgan', 'team': 'England', 'team_code': 'ENG', 'role': 'Batsman', 'ranking': 3},
+                {'name': 'Chris Woakes', 'team': 'England', 'team_code': 'ENG', 'role': 'All-rounder', 'ranking': 3},
+                {'name': 'Ollie Pope', 'team': 'England', 'team_code': 'ENG', 'role': 'Batsman', 'ranking': 3},
+                {'name': 'Dawid Malan', 'team': 'England', 'team_code': 'ENG', 'role': 'Batsman', 'ranking': 3},
+                {'name': 'Phil Salt', 'team': 'England', 'team_code': 'ENG', 'role': 'Wicket-keeper', 'ranking': 3},
+                {'name': 'Jofra Archer', 'team': 'England', 'team_code': 'ENG', 'role': 'Bowler', 'ranking': 3},
+                {'name': 'Tom Curran', 'team': 'England', 'team_code': 'ENG', 'role': 'All-rounder', 'ranking': 3},
+                
+                # New Zealand (NZ) - Extended Squad
+                {'name': 'Kane Williamson', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Batsman', 'ranking': 4},
+                {'name': 'Trent Boult', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Bowler', 'ranking': 4},
+                {'name': 'Ross Taylor', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Batsman', 'ranking': 4},
+                {'name': 'Tim Southee', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Bowler', 'ranking': 4},
+                {'name': 'Martin Guptill', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Batsman', 'ranking': 4},
+                {'name': 'Devon Conway', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Wicket-keeper', 'ranking': 4},
+                {'name': 'Mitchell Santner', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'All-rounder', 'ranking': 4},
+                {'name': 'Kyle Jamieson', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Bowler', 'ranking': 4},
+                {'name': 'Daryl Mitchell', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'All-rounder', 'ranking': 4},
+                {'name': 'Tom Latham', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Wicket-keeper', 'ranking': 4},
+                {'name': 'Colin de Grandhomme', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'All-rounder', 'ranking': 4},
+                {'name': 'Glenn Phillips', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Wicket-keeper', 'ranking': 4},
+                {'name': 'Ish Sodhi', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Bowler', 'ranking': 4},
+                {'name': 'Neil Wagner', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Bowler', 'ranking': 4},
+                {'name': 'Henry Nicholls', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Batsman', 'ranking': 4},
+                {'name': 'James Neesham', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'All-rounder', 'ranking': 4},
+                {'name': 'Matt Henry', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Bowler', 'ranking': 4},
+                {'name': 'Finn Allen', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Batsman', 'ranking': 4},
+                {'name': 'Adam Milne', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'Bowler', 'ranking': 4},
+                {'name': 'Michael Bracewell', 'team': 'New Zealand', 'team_code': 'NZ', 'role': 'All-rounder', 'ranking': 4},
+                
+                # Pakistan (PAK) - Extended Squad
+                {'name': 'Babar Azam', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Batsman', 'ranking': 5},
+                {'name': 'Shaheen Afridi', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Bowler', 'ranking': 5},
+                {'name': 'Mohammad Rizwan', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Wicket-keeper', 'ranking': 5},
+                {'name': 'Shadab Khan', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'All-rounder', 'ranking': 5},
+                {'name': 'Fakhar Zaman', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Batsman', 'ranking': 5},
+                {'name': 'Hasan Ali', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Bowler', 'ranking': 5},
+                {'name': 'Imam-ul-Haq', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Batsman', 'ranking': 5},
+                {'name': 'Mohammad Hafeez', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'All-rounder', 'ranking': 5},
+                {'name': 'Haris Rauf', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Bowler', 'ranking': 5},
+                {'name': 'Shoaib Malik', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Batsman', 'ranking': 5},
+                {'name': 'Mohammad Nawaz', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'All-rounder', 'ranking': 5},
+                {'name': 'Naseem Shah', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Bowler', 'ranking': 5},
+                {'name': 'Shan Masood', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Batsman', 'ranking': 5},
+                {'name': 'Asif Ali', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Batsman', 'ranking': 5},
+                {'name': 'Mohammad Wasim Jr', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Bowler', 'ranking': 5},
+                {'name': 'Azam Khan', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Wicket-keeper', 'ranking': 5},
+                {'name': 'Usman Qadir', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Bowler', 'ranking': 5},
+                {'name': 'Sarfaraz Ahmed', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Wicket-keeper', 'ranking': 5},
+                {'name': 'Faheem Ashraf', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'All-rounder', 'ranking': 5},
+                {'name': 'Abdullah Shafique', 'team': 'Pakistan', 'team_code': 'PAK', 'role': 'Batsman', 'ranking': 5},
+                
+                # South Africa (SA) - Extended Squad
+                {'name': 'Quinton de Kock', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Wicket-keeper', 'ranking': 6},
+                {'name': 'Kagiso Rabada', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Bowler', 'ranking': 6},
+                {'name': 'Faf du Plessis', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Batsman', 'ranking': 6},
+                {'name': 'AB de Villiers', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Batsman', 'ranking': 6},
+                {'name': 'Lungi Ngidi', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Bowler', 'ranking': 6},
+                {'name': 'David Miller', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Batsman', 'ranking': 6},
+                {'name': 'Anrich Nortje', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Bowler', 'ranking': 6},
+                {'name': 'Temba Bavuma', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Batsman', 'ranking': 6},
+                {'name': 'Keshav Maharaj', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Bowler', 'ranking': 6},
+                {'name': 'Rassie van der Dussen', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Batsman', 'ranking': 6},
+                {'name': 'Aiden Markram', 'team': 'South Africa', 'team_code': 'SA', 'role': 'All-rounder', 'ranking': 6},
+                {'name': 'Heinrich Klaasen', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Wicket-keeper', 'ranking': 6},
+                {'name': 'Marco Jansen', 'team': 'South Africa', 'team_code': 'SA', 'role': 'All-rounder', 'ranking': 6},
+                {'name': 'Wayne Parnell', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Bowler', 'ranking': 6},
+                {'name': 'Tabraiz Shamsi', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Bowler', 'ranking': 6},
+                {'name': 'Dwaine Pretorius', 'team': 'South Africa', 'team_code': 'SA', 'role': 'All-rounder', 'ranking': 6},
+                {'name': 'Reeza Hendricks', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Batsman', 'ranking': 6},
+                {'name': 'Janneman Malan', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Batsman', 'ranking': 6},
+                {'name': 'Andile Phehlukwayo', 'team': 'South Africa', 'team_code': 'SA', 'role': 'All-rounder', 'ranking': 6},
+                {'name': 'Tristan Stubbs', 'team': 'South Africa', 'team_code': 'SA', 'role': 'Batsman', 'ranking': 6},
+                
+                # West Indies (WI) - Extended Squad
+                {'name': 'Chris Gayle', 'team': 'West Indies', 'team_code': 'WI', 'role': 'Batsman', 'ranking': 7},
+                {'name': 'Andre Russell', 'team': 'West Indies', 'team_code': 'WI', 'role': 'All-rounder', 'ranking': 7},
+                {'name': 'Kieron Pollard', 'team': 'West Indies', 'team_code': 'WI', 'role': 'All-rounder', 'ranking': 7},
+                {'name': 'Jason Holder', 'team': 'West Indies', 'team_code': 'WI', 'role': 'All-rounder', 'ranking': 7},
+                {'name': 'Shimron Hetmyer', 'team': 'West Indies', 'team_code': 'WI', 'role': 'Batsman', 'ranking': 7},
+                {'name': 'Nicholas Pooran', 'team': 'West Indies', 'team_code': 'WI', 'role': 'Wicket-keeper', 'ranking': 7},
+                {'name': 'Alzarri Joseph', 'team': 'West Indies', 'team_code': 'WI', 'role': 'Bowler', 'ranking': 7},
+                {'name': 'Evin Lewis', 'team': 'West Indies', 'team_code': 'WI', 'role': 'Batsman', 'ranking': 7},
+                {'name': 'Sunil Narine', 'team': 'West Indies', 'team_code': 'WI', 'role': 'All-rounder', 'ranking': 7},
+                {'name': 'Dwayne Bravo', 'team': 'West Indies', 'team_code': 'WI', 'role': 'All-rounder', 'ranking': 7},
+                {'name': 'Sheldon Cottrell', 'team': 'West Indies', 'team_code': 'WI', 'role': 'Bowler', 'ranking': 7},
+                {'name': 'Fabian Allen', 'team': 'West Indies', 'team_code': 'WI', 'role': 'All-rounder', 'ranking': 7},
+                {'name': 'Shai Hope', 'team': 'West Indies', 'team_code': 'WI', 'role': 'Wicket-keeper', 'ranking': 7},
+                {'name': 'Roston Chase', 'team': 'West Indies', 'team_code': 'WI', 'role': 'All-rounder', 'ranking': 7},
+                {'name': 'Kemar Roach', 'team': 'West Indies', 'team_code': 'WI', 'role': 'Bowler', 'ranking': 7},
+                {'name': 'Akeal Hosein', 'team': 'West Indies', 'team_code': 'WI', 'role': 'Bowler', 'ranking': 7},
+                {'name': 'Brandon King', 'team': 'West Indies', 'team_code': 'WI', 'role': 'Batsman', 'ranking': 7},
+                {'name': 'Kyle Mayers', 'team': 'West Indies', 'team_code': 'WI', 'role': 'All-rounder', 'ranking': 7},
+                {'name': 'Odean Smith', 'team': 'West Indies', 'team_code': 'WI', 'role': 'All-rounder', 'ranking': 7},
+                {'name': 'Hayden Walsh Jr', 'team': 'West Indies', 'team_code': 'WI', 'role': 'Bowler', 'ranking': 7},
+                
+                # Sri Lanka (SL) - Extended Squad
+                {'name': 'Angelo Mathews', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'All-rounder', 'ranking': 8},
+                {'name': 'Lasith Malinga', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Bowler', 'ranking': 8},
+                {'name': 'Kusal Mendis', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Batsman', 'ranking': 8},
+                {'name': 'Wanindu Hasaranga', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'All-rounder', 'ranking': 8},
+                {'name': 'Dimuth Karunaratne', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Batsman', 'ranking': 8},
+                {'name': 'Kusal Perera', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Wicket-keeper', 'ranking': 8},
+                {'name': 'Dhananjaya de Silva', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'All-rounder', 'ranking': 8},
+                {'name': 'Chamika Karunaratne', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'All-rounder', 'ranking': 8},
+                {'name': 'Maheesh Theekshana', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Bowler', 'ranking': 8},
+                {'name': 'Pathum Nissanka', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Batsman', 'ranking': 8},
+                {'name': 'Bhanuka Rajapaksa', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Wicket-keeper', 'ranking': 8},
+                {'name': 'Dasun Shanaka', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'All-rounder', 'ranking': 8},
+                {'name': 'Lahiru Kumara', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Bowler', 'ranking': 8},
+                {'name': 'Dinesh Chandimal', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Wicket-keeper', 'ranking': 8},
+                {'name': 'Dushmantha Chameera', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Bowler', 'ranking': 8},
+                {'name': 'Charith Asalanka', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Batsman', 'ranking': 8},
+                {'name': 'Nuwan Thushara', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Bowler', 'ranking': 8},
+                {'name': 'Avishka Fernando', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Batsman', 'ranking': 8},
+                {'name': 'Jeffrey Vandersay', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Bowler', 'ranking': 8},
+                {'name': 'Niroshan Dickwella', 'team': 'Sri Lanka', 'team_code': 'SL', 'role': 'Wicket-keeper', 'ranking': 8},
+                
+                # Bangladesh (BAN) - Extended Squad
+                {'name': 'Shakib Al Hasan', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'All-rounder', 'ranking': 9},
+                {'name': 'Tamim Iqbal', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'Batsman', 'ranking': 9},
+                {'name': 'Mushfiqur Rahim', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'Wicket-keeper', 'ranking': 9},
+                {'name': 'Mustafizur Rahman', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'Bowler', 'ranking': 9},
+                {'name': 'Liton Das', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'Wicket-keeper', 'ranking': 9},
+                {'name': 'Mahmudullah', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'All-rounder', 'ranking': 9},
+                {'name': 'Mehidy Hasan', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'All-rounder', 'ranking': 9},
+                {'name': 'Taskin Ahmed', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'Bowler', 'ranking': 9},
+                {'name': 'Afif Hossain', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'All-rounder', 'ranking': 9},
+                {'name': 'Nurul Hasan', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'Wicket-keeper', 'ranking': 9},
+                {'name': 'Shoriful Islam', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'Bowler', 'ranking': 9},
+                {'name': 'Nasum Ahmed', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'Bowler', 'ranking': 9},
+                {'name': 'Soumya Sarkar', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'All-rounder', 'ranking': 9},
+                {'name': 'Rubel Hossain', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'Bowler', 'ranking': 9},
+                {'name': 'Mosaddek Hossain', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'All-rounder', 'ranking': 9},
+                {'name': 'Mominul Haque', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'Batsman', 'ranking': 9},
+                {'name': 'Najmul Hossain', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'Batsman', 'ranking': 9},
+                {'name': 'Yasir Ali', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'Batsman', 'ranking': 9},
+                {'name': 'Ebadot Hossain', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'Bowler', 'ranking': 9},
+                {'name': 'Hasan Mahmud', 'team': 'Bangladesh', 'team_code': 'BAN', 'role': 'Bowler', 'ranking': 9},
+                
+                # Afghanistan (AFG) - Extended Squad
+                {'name': 'Rashid Khan', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Bowler', 'ranking': 10},
+                {'name': 'Mohammad Nabi', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'All-rounder', 'ranking': 10},
+                {'name': 'Hazratullah Zazai', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Batsman', 'ranking': 10},
+                {'name': 'Mujeeb Ur Rahman', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Bowler', 'ranking': 10},
+                {'name': 'Najibullah Zadran', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Batsman', 'ranking': 10},
+                {'name': 'Mohammad Shahzad', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Wicket-keeper', 'ranking': 10},
+                {'name': 'Rahmanullah Gurbaz', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Wicket-keeper', 'ranking': 10},
+                {'name': 'Hashmatullah Shahidi', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Batsman', 'ranking': 10},
+                {'name': 'Ibrahim Zadran', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Batsman', 'ranking': 10},
+                {'name': 'Azmatullah Omarzai', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'All-rounder', 'ranking': 10},
+                {'name': 'Gulbadin Naib', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'All-rounder', 'ranking': 10},
+                {'name': 'Naveen-ul-Haq', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Bowler', 'ranking': 10},
+                {'name': 'Fazalhaq Farooqi', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Bowler', 'ranking': 10},
+                {'name': 'Rahmat Shah', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Batsman', 'ranking': 10},
+                {'name': 'Asghar Afghan', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Batsman', 'ranking': 10},
+                {'name': 'Karim Janat', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'All-rounder', 'ranking': 10},
+                {'name': 'Qais Ahmad', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Bowler', 'ranking': 10},
+                {'name': 'Usman Ghani', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Batsman', 'ranking': 10},
+                {'name': 'Afsar Zazai', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Wicket-keeper', 'ranking': 10},
+                {'name': 'Hamid Hassan', 'team': 'Afghanistan', 'team_code': 'AFG', 'role': 'Bowler', 'ranking': 10},
+                
+                # Ireland (IRE) - Extended Squad
+                {'name': 'Paul Stirling', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'Batsman', 'ranking': 11},
+                {'name': 'Kevin O\'Brien', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'All-rounder', 'ranking': 11},
+                {'name': 'Andrew Balbirnie', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'Batsman', 'ranking': 11},
+                {'name': 'Harry Tector', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'Batsman', 'ranking': 11},
+                {'name': 'Lorcan Tucker', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'Wicket-keeper', 'ranking': 11},
+                {'name': 'George Dockrell', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'All-rounder', 'ranking': 11},
+                {'name': 'Mark Adair', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'All-rounder', 'ranking': 11},
+                {'name': 'Josh Little', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'Bowler', 'ranking': 11},
+                {'name': 'Craig Young', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'Bowler', 'ranking': 11},
+                {'name': 'Curtis Campher', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'All-rounder', 'ranking': 11},
+                {'name': 'Gareth Delany', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'All-rounder', 'ranking': 11},
+                {'name': 'Andy McBrine', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'All-rounder', 'ranking': 11},
+                {'name': 'Barry McCarthy', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'Bowler', 'ranking': 11},
+                {'name': 'Neil Rock', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'Wicket-keeper', 'ranking': 11},
+                {'name': 'Shane Getkate', 'team': 'Ireland', 'team_code': 'IRE', 'role': 'All-rounder', 'ranking': 11},
+                
+                # Scotland (SCO) - Extended Squad
+                {'name': 'Kyle Coetzer', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'Batsman', 'ranking': 12},
+                {'name': 'Calum MacLeod', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'Batsman', 'ranking': 12},
+                {'name': 'Richie Berrington', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'All-rounder', 'ranking': 12},
+                {'name': 'Matthew Cross', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'Wicket-keeper', 'ranking': 12},
+                {'name': 'Mark Watt', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'Bowler', 'ranking': 12},
+                {'name': 'Chris Greaves', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'All-rounder', 'ranking': 12},
+                {'name': 'George Munsey', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'Batsman', 'ranking': 12},
+                {'name': 'Michael Leask', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'All-rounder', 'ranking': 12},
+                {'name': 'Josh Davey', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'Bowler', 'ranking': 12},
+                {'name': 'Dylan Budge', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'Wicket-keeper', 'ranking': 12},
+                {'name': 'Hamza Tahir', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'Bowler', 'ranking': 12},
+                {'name': 'Adrian Neill', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'Bowler', 'ranking': 12},
+                {'name': 'Oli Hairs', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'Batsman', 'ranking': 12},
+                {'name': 'Brandon McMullen', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'All-rounder', 'ranking': 12},
+                {'name': 'Chris Sole', 'team': 'Scotland', 'team_code': 'SCO', 'role': 'Bowler', 'ranking': 12},
+                
+                # Netherlands (NED) - Extended Squad
+                {'name': 'Pieter Seelaar', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'All-rounder', 'ranking': 13},
+                {'name': 'Ryan ten Doeschate', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'All-rounder', 'ranking': 13},
+                {'name': 'Scott Edwards', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'Wicket-keeper', 'ranking': 13},
+                {'name': 'Max O\'Dowd', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'Batsman', 'ranking': 13},
+                {'name': 'Colin Ackermann', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'All-rounder', 'ranking': 13},
+                {'name': 'Bas de Leede', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'All-rounder', 'ranking': 13},
+                {'name': 'Logan van Beek', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'All-rounder', 'ranking': 13},
+                {'name': 'Roelof van der Merwe', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'All-rounder', 'ranking': 13},
+                {'name': 'Fred Klaassen', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'Bowler', 'ranking': 13},
+                {'name': 'Paul van Meekeren', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'Bowler', 'ranking': 13},
+                {'name': 'Brandon Glover', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'Bowler', 'ranking': 13},
+                {'name': 'Stephan Myburgh', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'Batsman', 'ranking': 13},
+                {'name': 'Tobias Visee', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'Wicket-keeper', 'ranking': 13},
+                {'name': 'Tim Pringle', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'All-rounder', 'ranking': 13},
+                {'name': 'Vikramjit Singh', 'team': 'Netherlands', 'team_code': 'NED', 'role': 'Batsman', 'ranking': 13},
+                
+                # Zimbabwe (ZIM) - Extended Squad
+                {'name': 'Brendan Taylor', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'Wicket-keeper', 'ranking': 14},
+                {'name': 'Craig Ervine', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'Batsman', 'ranking': 14},
+                {'name': 'Sean Williams', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'All-rounder', 'ranking': 14},
+                {'name': 'Sikandar Raza', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'All-rounder', 'ranking': 14},
+                {'name': 'Regis Chakabva', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'Wicket-keeper', 'ranking': 14},
+                {'name': 'Wesley Madhevere', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'All-rounder', 'ranking': 14},
+                {'name': 'Ryan Burl', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'All-rounder', 'ranking': 14},
+                {'name': 'Tendai Chatara', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'Bowler', 'ranking': 14},
+                {'name': 'Blessing Muzarabani', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'Bowler', 'ranking': 14},
+                {'name': 'Richard Ngarava', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'Bowler', 'ranking': 14},
+                {'name': 'Luke Jongwe', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'All-rounder', 'ranking': 14},
+                {'name': 'Innocent Kaia', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'Batsman', 'ranking': 14},
+                {'name': 'Tadiwanashe Marumani', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'Wicket-keeper', 'ranking': 14},
+                {'name': 'Milton Shumba', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'All-rounder', 'ranking': 14},
+                {'name': 'Tony Munyonga', 'team': 'Zimbabwe', 'team_code': 'ZIM', 'role': 'Batsman', 'ranking': 14},
+            ]
+            
+            # Filter by team if specified
+            if team_id:
+                international_players = [p for p in international_players if p['team_code'].lower() == team_id.lower() or p['team'].lower() == team_id.lower()]
+            
+            # Format players for API response
+            formatted_players = []
+            for i, player in enumerate(international_players):
+                formatted_players.append({
+                    'id': i + 1,
+                    'fullname': player['name'],
+                    'firstname': player['name'].split(' ')[0],
+                    'lastname': ' '.join(player['name'].split(' ')[1:]) if len(player['name'].split(' ')) > 1 else '',
+                    'team': player['team'],
+                    'team_code': player['team_code'],
+                    'position': {'name': player['role']},
+                    'battingstyle': 'Right-hand bat',  # Default
+                    'bowlingstyle': 'Right-arm medium' if player['role'] == 'Bowler' else None,
+                    'country': {'name': player['team'], 'code': player['team_code']},
+                    'image_path': '',
+                    'ranking': player['ranking'],
+                    'is_international': True,
+                    'status': 'active'
+                })
+            
+            logger.info(f"Retrieved {len(formatted_players)} international cricket players")
+            return formatted_players
+            
+        except Exception as e:
+            logger.error(f"Error fetching players: {str(e)}")
+            return self._get_mock_data('players').get('data', [])
     
     def _get_mock_player_stats(self, player_id: int) -> Dict:
         """Generate mock player statistics"""

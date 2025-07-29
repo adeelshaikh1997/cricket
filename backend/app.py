@@ -146,6 +146,33 @@ class TeamStats(Resource):
             logger.error(f"Team stats error: {str(e)}")
             return {'error': 'Failed to retrieve team statistics'}, 500
 
+class Players(Resource):
+    """Get all international cricket players"""
+    
+    def get(self):
+        try:
+            logger.info(f"GET {request.url} - {request.remote_addr}")
+            
+            # Get optional team filter
+            team_id = request.args.get('team_id')
+            
+            players = cricket_service.get_players(team_id=team_id)
+            
+            return {
+                'success': True,
+                'data': players,
+                'total': len(players),
+                'message': f'Successfully retrieved {len(players)} international cricket players'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in Players endpoint: {str(e)}")
+            return {
+                'success': False,
+                'error': 'Failed to fetch players',
+                'message': str(e)
+            }, 500
+
 # Register API endpoints
 api.add_resource(HealthCheck, '/health')
 api.add_resource(MatchPrediction, '/predict')
@@ -153,6 +180,7 @@ api.add_resource(ModelInfo, '/model/info')
 api.add_resource(Teams, '/teams')
 api.add_resource(Venues, '/venues')
 api.add_resource(Fixtures, '/fixtures')
+api.add_resource(Players, '/players')
 api.add_resource(PlayerStats, '/players/<int:player_id>')
 api.add_resource(TeamStats, '/teams/<int:team_id>/stats')
 
