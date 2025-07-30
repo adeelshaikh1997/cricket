@@ -79,12 +79,293 @@ const PlayerDeepDive = () => {
     loadRealData();
   }, []);
 
+  // Generate role-specific career statistics
+  const generateRoleSpecificStats = (playerRole, baseAverage, baseStrikeRate, rankingBonus) => {
+    const isBowler = playerRole === 'Bowler';
+    const isAllRounder = playerRole === 'All-rounder';
+    const isWicketKeeper = playerRole === 'Wicket-keeper';
+    
+    if (isBowler) {
+      // Bowler-focused statistics
+      return {
+        // Primary bowling stats
+        totalWickets: Math.floor(150 + rankingBonus * 50 + Math.random() * 200),
+        totalMatches: Math.floor(80 + Math.random() * 120),
+        bowlingAverage: Math.round((20 + Math.random() * 15) * 10) / 10,
+        economyRate: Math.round((3.5 + Math.random() * 2.5) * 10) / 10,
+        strikeRate: Math.round((18 + Math.random() * 12) * 10) / 10, // Bowling SR (balls per wicket)
+        bestFigures: `${Math.floor(4 + Math.random() * 6)}/${Math.floor(15 + Math.random() * 35)}`,
+        fiveWicketHauls: Math.floor(rankingBonus / 3 + Math.random() * 8),
+        // Secondary batting stats (many bowlers can bat)
+        totalRuns: Math.floor(500 + Math.random() * 1500),
+        battingAverage: Math.round((15 + Math.random() * 20) * 10) / 10,
+        highestScore: Math.floor(30 + Math.random() * 70)
+      };
+    } else if (isAllRounder) {
+      // All-rounder balanced statistics
+      return {
+        // Batting stats
+        totalRuns: Math.floor(3000 + rankingBonus * 400 + Math.random() * 4000),
+        totalMatches: Math.floor(80 + Math.random() * 120),
+        centuries: Math.floor(rankingBonus / 3 + Math.random() * 6),
+        fifties: Math.floor(8 + rankingBonus + Math.random() * 15),
+        average: Math.round((35 + Math.random() * 15) * 10) / 10,
+        strikeRate: Math.round(baseStrikeRate * 10) / 10,
+        highestScore: Math.floor(120 + rankingBonus * 3 + Math.random() * 80),
+        // Bowling stats
+        totalWickets: Math.floor(80 + rankingBonus * 20 + Math.random() * 120),
+        bowlingAverage: Math.round((25 + Math.random() * 15) * 10) / 10,
+        economyRate: Math.round((4.0 + Math.random() * 2.0) * 10) / 10,
+        fiveWicketHauls: Math.floor(Math.random() * 4)
+      };
+    } else if (isWicketKeeper) {
+      // Wicket-keeper statistics
+      return {
+        // Batting stats
+        totalRuns: Math.floor(2500 + rankingBonus * 350 + Math.random() * 3500),
+        totalMatches: Math.floor(70 + Math.random() * 100),
+        centuries: Math.floor(rankingBonus / 3 + Math.random() * 7),
+        fifties: Math.floor(6 + rankingBonus + Math.random() * 12),
+        average: Math.round(baseAverage * 10) / 10,
+        strikeRate: Math.round(baseStrikeRate * 10) / 10,
+        highestScore: Math.floor(80 + rankingBonus * 4 + Math.random() * 100),
+        // Wicket-keeping stats
+        totalDismissals: Math.floor(200 + rankingBonus * 30 + Math.random() * 250),
+        catches: Math.floor(150 + rankingBonus * 25 + Math.random() * 200),
+        stumpings: Math.floor(20 + rankingBonus * 2 + Math.random() * 30)
+      };
+    } else {
+      // Default batsman statistics
+      return {
+        totalRuns: Math.floor(4000 + rankingBonus * 500 + Math.random() * 5000),
+        totalMatches: Math.floor(80 + Math.random() * 120),
+        centuries: Math.floor(rankingBonus / 2 + Math.random() * 12),
+        fifties: Math.floor(10 + rankingBonus + Math.random() * 20),
+        average: Math.round(baseAverage * 10) / 10,
+        strikeRate: Math.round(baseStrikeRate * 10) / 10,
+        highestScore: Math.floor(120 + rankingBonus * 5 + Math.random() * 150)
+      };
+    }
+  };
+
+  // Generate role-specific skills
+  const generateRoleSpecificSkills = (playerRole, rankingBonus) => {
+    const bonus = rankingBonus * 2; // Convert ranking bonus to skill bonus
+    
+    if (playerRole === 'Bowler') {
+      return [
+        { skill: 'Pace/Spin', value: Math.floor(65 + bonus + Math.random() * 30) },
+        { skill: 'Accuracy', value: Math.floor(70 + bonus + Math.random() * 25) },
+        { skill: 'Swing/Turn', value: Math.floor(60 + bonus + Math.random() * 35) },
+        { skill: 'Variations', value: Math.floor(55 + bonus + Math.random() * 40) },
+        { skill: 'Pressure Bowling', value: Math.floor(50 + bonus + Math.random() * 45) },
+        { skill: 'Death Bowling', value: Math.floor(45 + bonus + Math.random() * 50) }
+      ];
+    } else if (playerRole === 'All-rounder') {
+      return [
+        { skill: 'Batting Technique', value: Math.floor(60 + bonus + Math.random() * 30) },
+        { skill: 'Power Hitting', value: Math.floor(55 + bonus + Math.random() * 35) },
+        { skill: 'Bowling Accuracy', value: Math.floor(58 + bonus + Math.random() * 32) },
+        { skill: 'Fielding', value: Math.floor(65 + bonus + Math.random() * 30) },
+        { skill: 'Match Awareness', value: Math.floor(70 + bonus + Math.random() * 25) },
+        { skill: 'Versatility', value: Math.floor(75 + bonus + Math.random() * 20) }
+      ];
+    } else if (playerRole === 'Wicket-keeper') {
+      return [
+        { skill: 'Keeping Skills', value: Math.floor(75 + bonus + Math.random() * 20) },
+        { skill: 'Batting Technique', value: Math.floor(60 + bonus + Math.random() * 30) },
+        { skill: 'Reflexes', value: Math.floor(80 + bonus + Math.random() * 15) },
+        { skill: 'Leadership', value: Math.floor(65 + bonus + Math.random() * 30) },
+        { skill: 'Match Reading', value: Math.floor(70 + bonus + Math.random() * 25) },
+        { skill: 'Agility', value: Math.floor(75 + bonus + Math.random() * 20) }
+      ];
+    } else {
+      // Default batsman skills
+      return [
+        { skill: 'Power Hitting', value: Math.floor(60 + bonus + Math.random() * 35) },
+        { skill: 'Timing', value: Math.floor(65 + bonus + Math.random() * 30) },
+        { skill: 'Placement', value: Math.floor(55 + bonus + Math.random() * 40) },
+        { skill: 'Running', value: Math.floor(70 + bonus + Math.random() * 25) },
+        { skill: 'Pressure Handling', value: Math.floor(50 + bonus + Math.random() * 45) },
+        { skill: 'Consistency', value: Math.floor(60 + bonus + Math.random() * 35) }
+      ];
+    }
+  };
+
+  // Analyze recent form for hot/cold streaks
+  const analyzeRecentForm = (recentMatches, playerRole) => {
+    if (!recentMatches || recentMatches.length === 0) return null;
+    
+    const isBowler = playerRole === 'Bowler';
+    const last5 = recentMatches.slice(-5);
+    
+    if (isBowler) {
+      // For bowlers: analyze economy and wickets
+      const avgEconomy = last5.reduce((sum, m) => sum + (m.economy || 6.0), 0) / 5;
+      const totalWickets = last5.reduce((sum, m) => sum + (m.wickets || 0), 0);
+      
+      const streak = avgEconomy < 6.5 && totalWickets >= 3 ? 'hot' : 
+                    avgEconomy > 8.0 ? 'cold' : 'steady';
+      
+      return {
+        streak,
+        summary: streak === 'hot' ? `🔥 Hot form: ${totalWickets} wickets in last 5, Economy ${avgEconomy.toFixed(1)}` :
+                streak === 'cold' ? `❄️ Cold streak: High economy rate ${avgEconomy.toFixed(1)}` :
+                `➡️ Steady form: Consistent performance`,
+        momentumScore: Math.min(100, Math.max(20, 100 - (avgEconomy * 10) + (totalWickets * 5)))
+      };
+    } else {
+      // For batsmen: analyze runs and strike rate
+      const avgRuns = last5.reduce((sum, m) => sum + m.runs, 0) / 5;
+      const avgSR = last5.reduce((sum, m) => sum + m.strikeRate, 0) / 5;
+      const scores30Plus = last5.filter(m => m.runs >= 30).length;
+      
+      const streak = avgRuns >= 35 && scores30Plus >= 3 ? 'hot' : 
+                    avgRuns < 20 ? 'cold' : 'steady';
+      
+      return {
+        streak,
+        summary: streak === 'hot' ? `🔥 Hot form: Avg ${avgRuns.toFixed(0)} runs, ${scores30Plus}/5 scores 30+` :
+                streak === 'cold' ? `❄️ Cold streak: Low avg ${avgRuns.toFixed(0)} runs` :
+                `➡️ Steady form: Consistent ${avgRuns.toFixed(0)} avg`,
+        momentumScore: Math.min(100, Math.max(20, (avgRuns * 1.5) + (avgSR * 0.3)))
+      };
+    }
+  };
+
+  // Generate situational performance stats
+  const generateSituationalStats = (playerName, playerRole, nameHash) => {
+    const isBowler = playerRole === 'Bowler';
+    
+    // Use name hash for consistent stats
+    const factor = nameHash % 100;
+    
+    if (isBowler) {
+      return {
+        defending: {
+          economy: (5.2 + (factor % 15) / 10).toFixed(1),
+          strikeRate: (18 + (factor % 12)).toFixed(1),
+          average: (22 + (factor % 18)).toFixed(1)
+        },
+        chasing: {
+          economy: (6.1 + (factor % 20) / 10).toFixed(1),
+          strikeRate: (21 + (factor % 15)).toFixed(1),
+          average: (25 + (factor % 15)).toFixed(1)
+        },
+        pressure: {
+          deathOversEconomy: (7.8 + (factor % 25) / 10).toFixed(1),
+          powerplayWickets: Math.floor(8 + (factor % 12)),
+          successRate: Math.floor(65 + (factor % 25))
+        }
+      };
+    } else {
+      return {
+        chasing: {
+          average: (38 + (factor % 25)).toFixed(1),
+          strikeRate: (89 + (factor % 35)).toFixed(1),
+          successRate: Math.floor(68 + (factor % 25))
+        },
+        defending: {
+          average: (35 + (factor % 20)).toFixed(1),
+          strikeRate: (78 + (factor % 30)).toFixed(1),
+          successRate: Math.floor(72 + (factor % 20))
+        },
+        pressure: {
+          lastTenOvers: (82 + (factor % 30)).toFixed(1),
+          boundaries: Math.floor(12 + (factor % 8)),
+          clutchScore: Math.floor(67 + (factor % 28))
+        }
+      };
+    }
+  };
+
+  // Generate phase-wise performance
+  const generatePhasePerformance = (playerRole, nameHash) => {
+    const factor = nameHash % 100;
+    const isBowler = playerRole === 'Bowler';
+    
+    if (isBowler) {
+      return [
+        {
+          phase: 'Powerplay (1-6)',
+          economy: (5.8 + (factor % 15) / 10).toFixed(1),
+          strikeRate: (16 + (factor % 8)).toFixed(1),
+          wickets: Math.floor(12 + (factor % 18))
+        },
+        {
+          phase: 'Middle (7-15)', 
+          economy: (4.9 + (factor % 12) / 10).toFixed(1),
+          strikeRate: (19 + (factor % 10)).toFixed(1),
+          wickets: Math.floor(25 + (factor % 25))
+        },
+        {
+          phase: 'Death (16-20)',
+          economy: (8.2 + (factor % 20) / 10).toFixed(1),
+          strikeRate: (14 + (factor % 8)).toFixed(1),
+          wickets: Math.floor(8 + (factor % 12))
+        }
+      ];
+    } else {
+      return [
+        {
+          phase: 'Powerplay (1-6)',
+          average: (28 + (factor % 15)).toFixed(1),
+          strikeRate: (135 + (factor % 40)).toFixed(1),
+          runs: Math.floor(850 + (factor % 400))
+        },
+        {
+          phase: 'Middle (7-15)',
+          average: (42 + (factor % 20)).toFixed(1),
+          strikeRate: (89 + (factor % 25)).toFixed(1),
+          runs: Math.floor(1200 + (factor % 600))
+        },
+        {
+          phase: 'Death (16-20)',
+          average: (31 + (factor % 18)).toFixed(1),
+          strikeRate: (167 + (factor % 45)).toFixed(1),
+          runs: Math.floor(720 + (factor % 350))
+        }
+      ];
+    }
+  };
+
+  // Generate home vs away performance
+  const generateHomeAwayStats = (nameHash, teamName) => {
+    const factor = nameHash % 100;
+    
+    return {
+      home: {
+        matches: Math.floor(35 + (factor % 25)),
+        average: (45 + (factor % 20)).toFixed(1),
+        strikeRate: (88 + (factor % 25)).toFixed(1),
+        runs: Math.floor(1800 + (factor % 800))
+      },
+      away: {
+        matches: Math.floor(28 + (factor % 20)),
+        average: (38 + (factor % 18)).toFixed(1),
+        strikeRate: (82 + (factor % 20)).toFixed(1),
+        runs: Math.floor(1200 + (factor % 600))
+      },
+      neutral: {
+        matches: Math.floor(15 + (factor % 12)),
+        average: (41 + (factor % 16)).toFixed(1),
+        strikeRate: (85 + (factor % 22)).toFixed(1),
+        runs: Math.floor(650 + (factor % 300))
+      },
+      bestVenues: [
+        { venue: 'Lord\'s, London', average: (52 + (factor % 20)).toFixed(1), matches: Math.floor(6 + (factor % 8)) },
+        { venue: 'MCG, Melbourne', average: (48 + (factor % 25)).toFixed(1), matches: Math.floor(4 + (factor % 6)) },
+        { venue: `Home Ground, ${teamName}`, average: (55 + (factor % 15)).toFixed(1), matches: Math.floor(8 + (factor % 10)) }
+      ]
+    };
+  };
+
   // Generate comprehensive player statistics
-  const generatePlayerStats = async (playerName, teamName) => {
+  const generatePlayerStats = async (playerName, teamName, playerRole = 'Batsman') => {
     if (!playerName || !teamName) return null;
 
     try {
-      console.log(`🏏 Generating stats for ${playerName} from ${teamName}`);
+      console.log(`🏏 Generating ${playerRole} stats for ${playerName} from ${teamName}`);
       
       const team = realData.teams.find(t => t.name === teamName) || {};
       const teamRanking = team?.ranking || 10;
@@ -94,16 +375,8 @@ const PlayerDeepDive = () => {
       const baseAverage = 25 + rankingBonus * 2 + Math.random() * 20;
       const baseStrikeRate = 70 + rankingBonus * 3 + Math.random() * 30;
       
-      // Career statistics
-      const careerStats = {
-        totalRuns: Math.floor(2000 + rankingBonus * 300 + Math.random() * 3000),
-        totalMatches: Math.floor(50 + Math.random() * 100),
-        centuries: Math.floor(rankingBonus / 2 + Math.random() * 8),
-        fifties: Math.floor(5 + rankingBonus + Math.random() * 15),
-        average: Math.round(baseAverage * 10) / 10,
-        strikeRate: Math.round(baseStrikeRate * 10) / 10,
-        highestScore: Math.floor(80 + rankingBonus * 5 + Math.random() * 120)
-      };
+      // Role-specific career statistics
+      const careerStats = generateRoleSpecificStats(playerRole, baseAverage, baseStrikeRate, rankingBonus);
 
       // Fetch real match history from CricketData.org via backend
       let recentForm = [];
@@ -170,21 +443,28 @@ const PlayerDeepDive = () => {
         matches: Math.floor(5 + Math.random() * 15)
       }));
 
-      // Player skills assessment
-      const playerSkills = [
-        { skill: 'Power Hitting', value: Math.floor(60 + Math.random() * 35) },
-        { skill: 'Timing', value: Math.floor(65 + Math.random() * 30) },
-        { skill: 'Placement', value: Math.floor(55 + Math.random() * 40) },
-        { skill: 'Running', value: Math.floor(70 + Math.random() * 25) },
-        { skill: 'Pressure Handling', value: Math.floor(50 + Math.random() * 45) },
-        { skill: 'Consistency', value: Math.floor(60 + Math.random() * 35) }
-      ];
+      // Role-specific player skills assessment
+      const playerSkills = generateRoleSpecificSkills(playerRole, rankingBonus);
+
+              // Create name hash for consistent analytics
+        const nameHash = playerName.split('').reduce((hash, char) => hash + char.charCodeAt(0), 0);
+        
+        // Advanced Analytics
+        const recentFormAnalysis = analyzeRecentForm(recentForm, playerRole);
+        const situationalStats = generateSituationalStats(playerName, playerRole, nameHash);
+        const phasePerformance = generatePhasePerformance(playerRole, nameHash);
+        const homeAwayStats = generateHomeAwayStats(nameHash, teamName);
 
       return {
         playerName,
         teamName,
+        playerRole,
         careerStats,
         recentForm,
+        recentFormAnalysis,
+        situationalStats,
+        phasePerformance,
+        homeAwayStats,
         performanceTrend,
         formatPerformance,
         vsOpponents,
@@ -260,6 +540,84 @@ const PlayerDeepDive = () => {
     
     console.log(`✅ Generated ${matches.length} consistent matches for ${playerName} (aggressive=${isAggressive}, consistent=${isConsistent})`);
     return matches;
+  };
+
+  // Helper functions for role-specific UI display
+  const getPrimaryStatTitle = (role) => {
+    const titles = {
+      'Bowler': 'Bowling Stats',
+      'All-rounder': 'Batting Stats',
+      'Wicket-keeper': 'Batting Stats',
+      default: 'Career Stats'
+    };
+    return titles[role] || titles.default;
+  };
+
+  const getPrimaryStatValue = (stats, role) => {
+    if (role === 'Bowler') return stats.totalWickets || 0;
+    return (stats.totalRuns || 0).toLocaleString();
+  };
+
+  const getPrimaryStatLabel = (role) => {
+    return role === 'Bowler' ? 'Total Wickets' : 'Total Runs';
+  };
+
+  const getSecondaryStatValue = (stats, role) => {
+    if (role === 'Bowler') return stats.bowlingAverage || 0;
+    return stats.average || 0;
+  };
+
+  const getSecondaryStatLabel = (role) => {
+    return role === 'Bowler' ? 'Bowling Average' : 'Batting Average';
+  };
+
+  const getPerformanceTitle = (role) => {
+    return role === 'Bowler' ? 'Economy & Strike' : 'Strike Rate';
+  };
+
+  const getPerformanceStatValue = (stats, role) => {
+    if (role === 'Bowler') return stats.economyRate || 0;
+    return stats.strikeRate || 0;
+  };
+
+  const getPerformanceStatLabel = (role) => {
+    return role === 'Bowler' ? 'Economy Rate' : 'Strike Rate';
+  };
+
+  const getPerformanceSecondaryValue = (stats, role) => {
+    if (role === 'Bowler') return stats.strikeRate || 0;
+    return stats.highestScore || 0;
+  };
+
+  const getPerformanceSecondaryLabel = (role) => {
+    return role === 'Bowler' ? 'Bowling SR' : 'Highest Score';
+  };
+
+  const getAchievementValue = (stats, role) => {
+    if (role === 'Bowler') return stats.fiveWicketHauls || 0;
+    if (role === 'Wicket-keeper') return stats.totalDismissals || 0;
+    if (role === 'All-rounder') return stats.centuries || 0;
+    return stats.centuries || 0;
+  };
+
+  const getAchievementLabel = (role) => {
+    if (role === 'Bowler') return '5-Wicket Hauls';
+    if (role === 'Wicket-keeper') return 'Total Dismissals';
+    return 'Centuries';
+  };
+
+  const getAchievementSecondaryValue = (stats, role) => {
+    if (role === 'Bowler') return stats.bestFigures || '-';
+    if (role === 'Wicket-keeper') return stats.catches || 0;
+    if (role === 'All-rounder') return stats.totalWickets || 0;
+    return stats.fifties || 0;
+  };
+
+  const getAchievementSecondaryLabel = (role) => {
+    if (role === 'Bowler') return 'Best Figures';
+    if (role === 'Wicket-keeper') return 'Catches';
+    if (role === 'All-rounder') return 'Wickets';
+    return 'Fifties';
   };
 
   // State for all international players from API
@@ -342,8 +700,8 @@ const PlayerDeepDive = () => {
     setPlayerAnalysisData(null); // Clear previous data
     
     try {
-      console.log(`🎯 Selected player: ${player.name} from ${player.team}`);
-      const stats = await generatePlayerStats(player.name, player.team);
+      console.log(`🎯 Selected player: ${player.name} (${player.role}) from ${player.team}`);
+      const stats = await generatePlayerStats(player.name, player.team, player.role);
       setPlayerAnalysisData(stats);
     } catch (error) {
       console.error('Error generating player stats:', error);
@@ -532,110 +890,424 @@ const PlayerDeepDive = () => {
       {/* Player Analysis Dashboard */}
       {!loadingPlayerStats && playerAnalysisData && playerAnalysisData.careerStats && (
         <>
-          {/* Career Overview Cards */}
+          {/* Role-Specific Career Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card title="Career Stats" className="text-center">
-              <div className="space-y-3">
+            <Card title={getPrimaryStatTitle(playerAnalysisData.playerRole)} className="text-center bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700/50">
+              <div className="space-y-4">
                 <div>
-                  <div className="text-2xl font-bold text-cricket-green-600 dark:text-cricket-green-400">
-                    {(playerAnalysisData.careerStats.totalRuns || 0).toLocaleString()}
+                  <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+                    {getPrimaryStatValue(playerAnalysisData.careerStats, playerAnalysisData.playerRole)}
                   </div>
-                  <div className="text-sm text-gray-500">Total Runs</div>
+                  <div className="text-sm font-medium text-blue-700 dark:text-blue-300 uppercase tracking-wide">{getPrimaryStatLabel(playerAnalysisData.playerRole)}</div>
                 </div>
-                <div>
-                  <div className="text-xl font-semibold">
-                    {playerAnalysisData.careerStats.average || 0}
+                <div className="pt-3 border-t border-blue-200 dark:border-blue-700/50">
+                  <div className="text-xl font-semibold text-blue-800 dark:text-blue-200">
+                    {getSecondaryStatValue(playerAnalysisData.careerStats, playerAnalysisData.playerRole)}
                   </div>
-                  <div className="text-xs text-gray-500">Batting Average</div>
-                </div>
-              </div>
-            </Card>
-
-            <Card title="Strike Rate" className="text-center">
-              <div className="space-y-3">
-                <div>
-                  <div className="text-2xl font-bold text-cricket-blue-600 dark:text-cricket-blue-400">
-                    {playerAnalysisData.careerStats.strikeRate}
-                  </div>
-                  <div className="text-sm text-gray-500">Strike Rate</div>
-                </div>
-                <div>
-                  <div className="text-xl font-semibold">
-                    {playerAnalysisData.careerStats.highestScore}
-                  </div>
-                  <div className="text-xs text-gray-500">Highest Score</div>
+                  <div className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">{getSecondaryStatLabel(playerAnalysisData.playerRole)}</div>
                 </div>
               </div>
             </Card>
 
-            <Card title="Milestones" className="text-center">
-              <div className="space-y-3">
+            <Card title={getPerformanceTitle(playerAnalysisData.playerRole)} className="text-center bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700/50">
+              <div className="space-y-4">
                 <div>
-                  <div className="text-2xl font-bold text-cricket-gold-600 dark:text-cricket-gold-400">
-                    {playerAnalysisData.careerStats.centuries}
+                  <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
+                    {getPerformanceStatValue(playerAnalysisData.careerStats, playerAnalysisData.playerRole)}
                   </div>
-                  <div className="text-sm text-gray-500">Centuries</div>
+                  <div className="text-sm font-medium text-green-700 dark:text-green-300 uppercase tracking-wide">{getPerformanceStatLabel(playerAnalysisData.playerRole)}</div>
                 </div>
-                <div>
-                  <div className="text-xl font-semibold">
-                    {playerAnalysisData.careerStats.fifties}
+                <div className="pt-3 border-t border-green-200 dark:border-green-700/50">
+                  <div className="text-xl font-semibold text-green-800 dark:text-green-200">
+                    {getPerformanceSecondaryValue(playerAnalysisData.careerStats, playerAnalysisData.playerRole)}
                   </div>
-                  <div className="text-xs text-gray-500">Fifties</div>
+                  <div className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wide">{getPerformanceSecondaryLabel(playerAnalysisData.playerRole)}</div>
                 </div>
               </div>
             </Card>
 
-            <Card title="Experience" className="text-center">
-              <div className="space-y-3">
+            <Card title="Achievements" className="text-center bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700/50">
+              <div className="space-y-4">
                 <div>
-                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">
+                    {getAchievementValue(playerAnalysisData.careerStats, playerAnalysisData.playerRole)}
+                  </div>
+                  <div className="text-sm font-medium text-orange-700 dark:text-orange-300 uppercase tracking-wide">{getAchievementLabel(playerAnalysisData.playerRole)}</div>
+                </div>
+                <div className="pt-3 border-t border-orange-200 dark:border-orange-700/50">
+                  <div className="text-xl font-semibold text-orange-800 dark:text-orange-200">
+                    {getAchievementSecondaryValue(playerAnalysisData.careerStats, playerAnalysisData.playerRole)}
+                  </div>
+                  <div className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wide">{getAchievementSecondaryLabel(playerAnalysisData.playerRole)}</div>
+                </div>
+              </div>
+            </Card>
+
+            <Card title="Experience" className="text-center bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-700/50">
+              <div className="space-y-4">
+                <div>
+                  <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
                     {playerAnalysisData.careerStats.totalMatches}
                   </div>
-                  <div className="text-sm text-gray-500">Total Matches</div>
+                  <div className="text-sm font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wide">Total Matches</div>
                 </div>
-                <div>
-                  <div className="text-xl font-semibold">
-                    {Math.round(playerAnalysisData.careerStats.totalRuns / playerAnalysisData.careerStats.totalMatches)}
+                <div className="pt-3 border-t border-purple-200 dark:border-purple-700/50">
+                  <div className="text-xl font-semibold text-purple-800 dark:text-purple-200">
+                    {playerAnalysisData.playerRole}
                   </div>
-                  <div className="text-xs text-gray-500">Runs/Match</div>
+                  <div className="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">Player Role</div>
                 </div>
               </div>
             </Card>
           </div>
 
+          {/* Recent Form Analysis */}
+          {playerAnalysisData.recentFormAnalysis && (
+            <Card title="🔥 Current Form" subtitle="Performance momentum over last 5 matches" className="mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="text-4xl mb-2">
+                    {playerAnalysisData.recentFormAnalysis.streak === 'hot' ? '🔥' : 
+                     playerAnalysisData.recentFormAnalysis.streak === 'cold' ? '❄️' : '➡️'}
+                  </div>
+                  <div className="text-lg font-semibold mb-1">
+                    {playerAnalysisData.recentFormAnalysis.streak === 'hot' ? 'Hot Form' : 
+                     playerAnalysisData.recentFormAnalysis.streak === 'cold' ? 'Cold Streak' : 'Steady Form'}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {playerAnalysisData.recentFormAnalysis.summary}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+                    {Math.round(playerAnalysisData.recentFormAnalysis.momentumScore)}
+                  </div>
+                  <div className="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                    Momentum Score
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-3">
+                    <div 
+                      className={`h-2 rounded-full ${
+                        playerAnalysisData.recentFormAnalysis.momentumScore >= 70 ? 'bg-green-500' :
+                        playerAnalysisData.recentFormAnalysis.momentumScore >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${playerAnalysisData.recentFormAnalysis.momentumScore}%` }}
+                    ></div>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Next Match Outlook</div>
+                  <div className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    playerAnalysisData.recentFormAnalysis.streak === 'hot' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                    playerAnalysisData.recentFormAnalysis.streak === 'cold' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                    'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                  }`}>
+                    {playerAnalysisData.recentFormAnalysis.streak === 'hot' ? 'High confidence' :
+                     playerAnalysisData.recentFormAnalysis.streak === 'cold' ? 'Needs improvement' : 'Stable performance'}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Situational Performance */}
+          <Card title="🎯 Situational Analysis" subtitle="Performance in different match scenarios" className="mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Chasing vs Defending */}
+              <div>
+                <h4 className="text-sm font-semibold mb-4 text-gray-800 dark:text-gray-200">Match Situation</h4>
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700/50">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-blue-800 dark:text-blue-200">🏃 Chasing Targets</span>
+                      <span className="text-xs px-2 py-1 bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
+                        {playerAnalysisData.situationalStats.chasing.successRate}% Success
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">Average:</span>
+                        <span className="font-medium ml-2 text-blue-800 dark:text-blue-200">
+                          {playerAnalysisData.situationalStats.chasing.average}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">Strike Rate:</span>
+                        <span className="font-medium ml-2 text-blue-800 dark:text-blue-200">
+                          {playerAnalysisData.situationalStats.chasing.strikeRate}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700/50">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-green-800 dark:text-green-200">🛡️ Defending Totals</span>
+                      <span className="text-xs px-2 py-1 bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 rounded">
+                        {playerAnalysisData.situationalStats.defending.successRate}% Success
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">Average:</span>
+                        <span className="font-medium ml-2 text-green-800 dark:text-green-200">
+                          {playerAnalysisData.situationalStats.defending.average}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">Strike Rate:</span>
+                        <span className="font-medium ml-2 text-green-800 dark:text-green-200">
+                          {playerAnalysisData.situationalStats.defending.strikeRate}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pressure Situations */}
+              <div>
+                <h4 className="text-sm font-semibold mb-4 text-gray-800 dark:text-gray-200">Pressure Performance</h4>
+                <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-700/50">
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Clutch Score:</span>
+                      <span className="font-bold text-orange-800 dark:text-orange-200">
+                        {playerAnalysisData.situationalStats.pressure.clutchScore || playerAnalysisData.situationalStats.pressure.successRate}/100
+                      </span>
+                    </div>
+                    {playerAnalysisData.playerRole === 'Bowler' ? (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Death Overs Economy:</span>
+                          <span className="font-medium text-orange-800 dark:text-orange-200">
+                            {playerAnalysisData.situationalStats.pressure.deathOversEconomy}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Powerplay Wickets:</span>
+                          <span className="font-medium text-orange-800 dark:text-orange-200">
+                            {playerAnalysisData.situationalStats.pressure.powerplayWickets}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Last 10 Overs SR:</span>
+                          <span className="font-medium text-orange-800 dark:text-orange-200">
+                            {playerAnalysisData.situationalStats.pressure.lastTenOvers}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Boundaries/Match:</span>
+                          <span className="font-medium text-orange-800 dark:text-orange-200">
+                            {playerAnalysisData.situationalStats.pressure.boundaries}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Phase Performance */}
+          <Card title="⏱️ Phase-wise Performance" subtitle="Breakdown by match phases" className="mb-6">
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart 
+                data={playerAnalysisData.phasePerformance}
+                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                barCategoryGap="25%"
+              >
+                <defs>
+                  <linearGradient id="phaseBarGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.9}/>
+                    <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.6}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid 
+                  strokeDasharray="2 2" 
+                  stroke="#F2F2F7" 
+                  strokeOpacity={0.5}
+                  horizontal={true}
+                  vertical={false}
+                />
+                <XAxis 
+                  dataKey="phase" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#8E8E93' }}
+                  dy={10}
+                />
+                <YAxis 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#8E8E93' }}
+                  dx={-10}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    border: 'none',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                    fontSize: '14px'
+                  }}
+                  labelStyle={{ color: '#1D1D1F', fontWeight: '600' }}
+                />
+                <Bar 
+                  dataKey={playerAnalysisData.playerRole === 'Bowler' ? 'economy' : 'strikeRate'} 
+                  fill="url(#phaseBarGradient)" 
+                  name={playerAnalysisData.playerRole === 'Bowler' ? 'Economy Rate' : 'Strike Rate'}
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
+
+          {/* Home vs Away Performance */}
+          <Card title="🏠 Venue Performance" subtitle="Home, away & neutral venue analysis" className="mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700/50">
+                <div className="text-2xl mb-2">🏠</div>
+                <div className="font-semibold text-green-800 dark:text-green-200 mb-2">Home</div>
+                <div className="space-y-1 text-sm">
+                  <div>Avg: <span className="font-medium">{playerAnalysisData.homeAwayStats.home.average}</span></div>
+                  <div>SR: <span className="font-medium">{playerAnalysisData.homeAwayStats.home.strikeRate}</span></div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    {playerAnalysisData.homeAwayStats.home.matches} matches
+                  </div>
+                </div>
+              </div>
+              
+              <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700/50">
+                <div className="text-2xl mb-2">✈️</div>
+                <div className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Away</div>
+                <div className="space-y-1 text-sm">
+                  <div>Avg: <span className="font-medium">{playerAnalysisData.homeAwayStats.away.average}</span></div>
+                  <div>SR: <span className="font-medium">{playerAnalysisData.homeAwayStats.away.strikeRate}</span></div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    {playerAnalysisData.homeAwayStats.away.matches} matches
+                  </div>
+                </div>
+              </div>
+              
+              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="text-2xl mb-2">🌍</div>
+                <div className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Neutral</div>
+                <div className="space-y-1 text-sm">
+                  <div>Avg: <span className="font-medium">{playerAnalysisData.homeAwayStats.neutral.average}</span></div>
+                  <div>SR: <span className="font-medium">{playerAnalysisData.homeAwayStats.neutral.strikeRate}</span></div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    {playerAnalysisData.homeAwayStats.neutral.matches} matches
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Best Venues */}
+            <div className="mt-6">
+              <h4 className="text-sm font-semibold mb-3 text-gray-800 dark:text-gray-200">Favorite Venues</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {playerAnalysisData.homeAwayStats.bestVenues.map((venue, index) => (
+                  <div key={index} className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700/50">
+                    <div className="font-medium text-purple-800 dark:text-purple-200 text-sm mb-1">{venue.venue}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                      Avg {venue.average} ({venue.matches} matches)
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+
           {/* Performance Trend Chart */}
           <Card 
-            title={`${playerAnalysisData.playerName} - Performance Trend (24 Months)`}
-            subtitle="Batting average and strike rate over time"
+            title={`${playerAnalysisData.playerName} Performance`}
+            subtitle="24-month trend analysis"
             className="col-span-full"
           >
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={playerAnalysisData.performanceTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis yAxisId="left" orientation="left" />
-                <YAxis yAxisId="right" orientation="right" />
+            <ResponsiveContainer width="100%" height={340}>
+              <LineChart 
+                data={playerAnalysisData.performanceTrend}
+                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+              >
+                <defs>
+                  <linearGradient id="averageGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#007AFF" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#007AFF" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="strikeRateGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#34C759" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#34C759" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid 
+                  strokeDasharray="2 2" 
+                  stroke="#F2F2F7" 
+                  strokeOpacity={0.5}
+                  horizontal={true}
+                  vertical={false}
+                />
+                <XAxis 
+                  dataKey="month" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#8E8E93' }}
+                  dy={10}
+                />
+                <YAxis 
+                  yAxisId="left" 
+                  orientation="left" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#8E8E93' }}
+                  dx={-10}
+                />
+                <YAxis 
+                  yAxisId="right" 
+                  orientation="right" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#8E8E93' }}
+                  dx={10}
+                />
                 <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    border: 'none',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                    fontSize: '14px'
+                  }}
                   formatter={(value, name) => [
                     typeof value === 'number' ? value.toFixed(1) : value,
                     name
                   ]}
+                  labelStyle={{ color: '#1D1D1F', fontWeight: '600' }}
                 />
-                <Legend />
                 <Line 
                   yAxisId="left" 
                   type="monotone" 
                   dataKey="average" 
-                  stroke="#22c55e" 
-                  strokeWidth={2}
+                  stroke="#007AFF" 
+                  strokeWidth={3}
+                  dot={{ fill: '#007AFF', strokeWidth: 0, r: 4 }}
+                  activeDot={{ r: 6, stroke: '#007AFF', strokeWidth: 2, fill: '#FFFFFF' }}
                   name="Batting Average"
                 />
                 <Line 
                   yAxisId="right" 
                   type="monotone" 
                   dataKey="strikeRate" 
-                  stroke="#3b82f6" 
-                  strokeWidth={2}
+                  stroke="#34C759" 
+                  strokeWidth={3}
+                  dot={{ fill: '#34C759', strokeWidth: 0, r: 4 }}
+                  activeDot={{ r: 6, stroke: '#34C759', strokeWidth: 2, fill: '#FFFFFF' }}
                   name="Strike Rate"
                 />
               </LineChart>
@@ -645,16 +1317,66 @@ const PlayerDeepDive = () => {
           {/* Format Performance and Recent Form */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Format Performance */}
-            <Card title="Performance by Format" subtitle="Stats across T20I, ODI, and Test cricket">
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={playerAnalysisData.formatPerformance}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="format" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="average" fill="#22c55e" name="Average" />
-                  <Bar dataKey="strikeRate" fill="#3b82f6" name="Strike Rate" />
+            <Card title="Format Performance" subtitle="Across international cricket formats">
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart 
+                  data={playerAnalysisData.formatPerformance}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  barCategoryGap="20%"
+                >
+                  <defs>
+                    <linearGradient id="averageBarGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9}/>
+                      <stop offset="95%" stopColor="#007AFF" stopOpacity={0.6}/>
+                    </linearGradient>
+                    <linearGradient id="strikeRateBarGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#34C759" stopOpacity={0.9}/>
+                      <stop offset="95%" stopColor="#34C759" stopOpacity={0.6}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid 
+                    strokeDasharray="2 2" 
+                    stroke="#F2F2F7" 
+                    strokeOpacity={0.5}
+                    horizontal={true}
+                    vertical={false}
+                  />
+                  <XAxis 
+                    dataKey="format" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: '#8E8E93' }}
+                    dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: '#8E8E93' }}
+                    dx={-10}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(10px)',
+                      border: 'none',
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                      fontSize: '14px'
+                    }}
+                    labelStyle={{ color: '#1D1D1F', fontWeight: '600' }}
+                  />
+                  <Bar 
+                    dataKey="average" 
+                    fill="url(#averageBarGradient)" 
+                    name="Average"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar 
+                    dataKey="strikeRate" 
+                    fill="url(#strikeRateBarGradient)" 
+                    name="Strike Rate"
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </Card>
@@ -665,30 +1387,30 @@ const PlayerDeepDive = () => {
             <div className="space-y-6">
               
               {/* Quick Stats Summary */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-sm">
                 <div className="text-center">
-                  <div className="text-lg font-bold text-cricket-green-600 dark:text-cricket-green-400">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">
                     {playerAnalysisData.recentForm.reduce((sum, match) => sum + match.runs, 0)}
                   </div>
-                  <div className="text-xs text-gray-500">Total Runs</div>
+                  <div className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">Total Runs</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-cricket-blue-600 dark:text-cricket-blue-400">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">
                     {Math.round(playerAnalysisData.recentForm.reduce((sum, match) => sum + match.strikeRate, 0) / 10)}
                   </div>
-                  <div className="text-xs text-gray-500">Avg Strike Rate</div>
+                  <div className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">Avg Strike Rate</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-cricket-gold-600 dark:text-cricket-gold-400">
+                  <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-1">
                     {playerAnalysisData.recentForm.filter(match => match.milestone).length}
                   </div>
-                  <div className="text-xs text-gray-500">50+ Scores</div>
+                  <div className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">50+ Scores</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-green-600">
+                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400 mb-1">
                     {Math.round((playerAnalysisData.recentForm.filter(match => match.result === 'Won').length / 10) * 100)}%
                   </div>
-                  <div className="text-xs text-gray-500">Win Rate</div>
+                  <div className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">Win Rate</div>
                 </div>
               </div>
 
@@ -696,22 +1418,57 @@ const PlayerDeepDive = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Runs Progression Chart */}
                 <div>
-                  <h4 className="text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">Runs Progression</h4>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={playerAnalysisData.recentForm}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="matchNumber" />
-                      <YAxis />
+                  <h4 className="text-sm font-semibold mb-4 text-gray-800 dark:text-gray-200">Runs Progression</h4>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <LineChart 
+                      data={playerAnalysisData.recentForm}
+                      margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
+                    >
+                      <defs>
+                        <linearGradient id="runsAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#FF6B35" stopOpacity={0.2}/>
+                          <stop offset="95%" stopColor="#FF6B35" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid 
+                        strokeDasharray="2 2" 
+                        stroke="#F2F2F7" 
+                        strokeOpacity={0.3}
+                        horizontal={true}
+                        vertical={false}
+                      />
+                      <XAxis 
+                        dataKey="matchNumber" 
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 11, fill: '#8E8E93' }}
+                      />
+                      <YAxis 
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 11, fill: '#8E8E93' }}
+                        width={35}
+                      />
                       <Tooltip 
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                          backdropFilter: 'blur(10px)',
+                          border: 'none',
+                          borderRadius: '8px',
+                          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
+                          fontSize: '13px'
+                        }}
                         formatter={(value, name) => [value, name]}
                         labelFormatter={(label) => `Match ${label}`}
+                        labelStyle={{ color: '#1D1D1F', fontWeight: '600' }}
                       />
                       <Line 
                         type="monotone" 
                         dataKey="runs" 
-                        stroke="#22c55e" 
-                        strokeWidth={2}
-                        dot={{ fill: '#22c55e', strokeWidth: 2, r: 4 }}
+                        stroke="#FF6B35" 
+                        strokeWidth={3}
+                        dot={{ fill: '#FF6B35', strokeWidth: 0, r: 5 }}
+                        activeDot={{ r: 7, stroke: '#FF6B35', strokeWidth: 2, fill: '#FFFFFF' }}
                         name="Runs"
                       />
                     </LineChart>
@@ -720,85 +1477,120 @@ const PlayerDeepDive = () => {
 
                 {/* Strike Rate Chart */}
                 <div>
-                  <h4 className="text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">Strike Rate Trend</h4>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={playerAnalysisData.recentForm}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="matchNumber" />
-                      <YAxis />
+                  <h4 className="text-sm font-semibold mb-4 text-gray-800 dark:text-gray-200">Strike Rate Trend</h4>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart 
+                      data={playerAnalysisData.recentForm}
+                      margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
+                    >
+                      <defs>
+                        <linearGradient id="strikeRateModernGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#5856D6" stopOpacity={1}/>
+                          <stop offset="95%" stopColor="#5856D6" stopOpacity={0.7}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid 
+                        strokeDasharray="2 2" 
+                        stroke="#F2F2F7" 
+                        strokeOpacity={0.3}
+                        horizontal={true}
+                        vertical={false}
+                      />
+                      <XAxis 
+                        dataKey="matchNumber" 
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 11, fill: '#8E8E93' }}
+                      />
+                      <YAxis 
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 11, fill: '#8E8E93' }}
+                        width={35}
+                      />
                       <Tooltip 
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                          backdropFilter: 'blur(10px)',
+                          border: 'none',
+                          borderRadius: '8px',
+                          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
+                          fontSize: '13px'
+                        }}
                         formatter={(value, name) => [value, name]}
                         labelFormatter={(label) => `Match ${label}`}
+                        labelStyle={{ color: '#1D1D1F', fontWeight: '600' }}
                       />
-                      <Bar dataKey="strikeRate" fill="#3b82f6" name="Strike Rate" />
+                      <Bar 
+                        dataKey="strikeRate" 
+                        fill="url(#strikeRateModernGradient)" 
+                        name="Strike Rate"
+                        radius={[6, 6, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* Detailed Match Table */}
+              {/* Simplified Match Table */}
               <div>
-                <h4 className="text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">Match-by-Match Breakdown</h4>
+                <h4 className="text-sm font-semibold mb-4 text-gray-800 dark:text-gray-200">Match-by-Match Breakdown</h4>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-100 dark:bg-gray-700">
+                    <thead className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600">
                       <tr>
-                        <th className="px-3 py-2 text-left">Date</th>
-                        <th className="px-3 py-2 text-left">vs</th>
-                        <th className="px-3 py-2 text-left">Format</th>
-                        <th className="px-3 py-2 text-center">Runs</th>
-                        <th className="px-3 py-2 text-center">Balls</th>
-                        <th className="px-3 py-2 text-center">4s</th>
-                        <th className="px-3 py-2 text-center">6s</th>
-                        <th className="px-3 py-2 text-center">SR</th>
-                        <th className="px-3 py-2 text-center">Result</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-800 dark:text-gray-200">Date</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-800 dark:text-gray-200">vs</th>
+                        <th className="px-4 py-3 text-center font-medium text-gray-800 dark:text-gray-200">Runs</th>
+                        <th className="px-4 py-3 text-center font-medium text-gray-800 dark:text-gray-200">SR</th>
+                        <th className="px-4 py-3 text-center font-medium text-gray-800 dark:text-gray-200">Milestone</th>
+                        <th className="px-4 py-3 text-center font-medium text-gray-800 dark:text-gray-200">Result</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
                       {playerAnalysisData.recentForm.map((match, index) => (
-                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-3 py-2 text-gray-600 dark:text-gray-300">
-                            {match.dateFormatted}
-                          </td>
-                          <td className="px-3 py-2 font-medium">
-                            {match.opponent}
-                          </td>
-                          <td className="px-3 py-2">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              match.format === 'T20I' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
-                              match.format === 'ODI' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
-                              'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                            }`}>
-                              {match.format}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 text-center font-medium">
-                            <div className="flex items-center justify-center space-x-1">
-                              <span className={match.milestone ? 'font-bold text-cricket-gold-600' : ''}>
-                                {match.runs}{match.notOut ? '*' : ''}
+                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                          <td className="px-4 py-4">
+                            <div className="font-medium text-gray-800 dark:text-gray-200">{match.dateFormatted}</div>
+                            <div className="text-xs mt-1">
+                              <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                                match.format === 'T20I' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                match.format === 'ODI' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                              }`}>
+                                {match.format}
                               </span>
-                              {match.milestone && (
-                                <span className="text-xs text-cricket-gold-600">🏆</span>
-                              )}
                             </div>
                           </td>
-                          <td className="px-3 py-2 text-center text-gray-600 dark:text-gray-400">
-                            {match.balls}
+                          <td className="px-4 py-4">
+                            <div className="font-semibold text-gray-800 dark:text-gray-200">{match.opponent}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{match.venue}</div>
                           </td>
-                          <td className="px-3 py-2 text-center text-gray-600 dark:text-gray-400">
-                            {match.fours}
+                          <td className="px-4 py-4 text-center">
+                            <div className="font-bold text-xl text-blue-600 dark:text-blue-400">
+                              {match.runs}{match.notOut ? '*' : ''}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {match.balls}b • {match.fours}×4 • {match.sixes}×6
+                            </div>
                           </td>
-                          <td className="px-3 py-2 text-center text-gray-600 dark:text-gray-400">
-                            {match.sixes}
+                          <td className="px-4 py-4 text-center">
+                            <div className="font-semibold text-lg text-green-600 dark:text-green-400">
+                              {match.strikeRate.toFixed(1)}
+                            </div>
                           </td>
-                          <td className="px-3 py-2 text-center font-medium">
-                            {match.strikeRate}
+                          <td className="px-4 py-4 text-center">
+                            {match.milestone ? (
+                              <span className="text-2xl">🏆</span>
+                            ) : (
+                              <span className="text-gray-400 text-xl">-</span>
+                            )}
                           </td>
-                          <td className="px-3 py-2 text-center">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              match.result === 'Won' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
-                              match.result === 'Lost' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
-                              'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300'
+                          <td className="px-4 py-4 text-center">
+                            <span className={`px-3 py-1.5 text-xs font-semibold rounded-full ${
+                              match.result === 'Won' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                              match.result === 'Lost' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                              'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
                             }`}>
                               {match.result}
                             </span>
@@ -842,73 +1634,117 @@ const PlayerDeepDive = () => {
           {/* Player Skills Radar and vs Opponents */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Player Skills Radar */}
-            <Card title="Player Skills Assessment" subtitle="Overall batting skills analysis">
-              <ResponsiveContainer width="100%" height={300}>
-                <RadarChart data={playerAnalysisData.playerSkills}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="skill" />
+            <Card title={`${playerAnalysisData.playerRole} Skills`} subtitle={`Performance assessment across key areas`}>
+              <ResponsiveContainer width="100%" height={320}>
+                <RadarChart 
+                  data={playerAnalysisData.playerSkills}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                >
+                  <defs>
+                    <linearGradient id="skillsGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#AF52DE" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#AF52DE" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                  <PolarGrid 
+                    stroke="#F2F2F7" 
+                    strokeOpacity={0.6}
+                    strokeWidth={1}
+                  />
+                  <PolarAngleAxis 
+                    dataKey="skill" 
+                    tick={{ fontSize: 11, fill: '#8E8E93' }}
+                    className="text-xs"
+                  />
                   <PolarRadiusAxis 
-                    angle={60} 
+                    angle={90} 
                     domain={[0, 100]} 
                     tick={false}
+                    tickCount={5}
+                    stroke="#F2F2F7"
+                    strokeOpacity={0.3}
                   />
                   <Radar
                     name="Skills"
                     dataKey="value"
-                    stroke="#22c55e"
-                    fill="#22c55e"
-                    fillOpacity={0.3}
-                    strokeWidth={2}
+                    stroke="#AF52DE"
+                    fill="url(#skillsGradient)"
+                    strokeWidth={3}
+                    dot={{ fill: '#AF52DE', strokeWidth: 0, r: 4 }}
                   />
-                  <Tooltip />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(10px)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
+                      fontSize: '13px'
+                    }}
+                    labelStyle={{ color: '#1D1D1F', fontWeight: '600' }}
+                  />
                 </RadarChart>
               </ResponsiveContainer>
             </Card>
 
             {/* Performance vs Opponents */}
-            <Card title="vs Top Opponents" subtitle="Performance against leading cricket nations">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={playerAnalysisData.vsOpponents} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis dataKey="opponent" type="category" width={80} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="average" fill="#22c55e" name="Average" />
+            <Card title="vs Top Opponents" subtitle="Performance against leading nations">
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart 
+                  data={playerAnalysisData.vsOpponents} 
+                  layout="horizontal"
+                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                >
+                  <defs>
+                    <linearGradient id="opponentsGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="5%" stopColor="#FF9500" stopOpacity={0.9}/>
+                      <stop offset="95%" stopColor="#FF9500" stopOpacity={0.6}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid 
+                    strokeDasharray="2 2" 
+                    stroke="#F2F2F7" 
+                    strokeOpacity={0.5}
+                    horizontal={false}
+                    vertical={true}
+                  />
+                  <XAxis 
+                    type="number" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: '#8E8E93' }}
+                  />
+                  <YAxis 
+                    dataKey="opponent" 
+                    type="category" 
+                    width={70} 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: '#8E8E93' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(10px)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
+                      fontSize: '13px'
+                    }}
+                    labelStyle={{ color: '#1D1D1F', fontWeight: '600' }}
+                  />
+                  <Bar 
+                    dataKey="average" 
+                    fill="url(#opponentsGradient)" 
+                    name="Average"
+                    radius={[0, 4, 4, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </Card>
           </div>
 
-          {/* Detailed Stats Table */}
-          <Card title="Format Breakdown" subtitle="Detailed statistics by match format">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2 px-3">Format</th>
-                    <th className="text-right py-2 px-3">Matches</th>
-                    <th className="text-right py-2 px-3">Runs</th>
-                    <th className="text-right py-2 px-3">Average</th>
-                    <th className="text-right py-2 px-3">Strike Rate</th>
-                    <th className="text-right py-2 px-3">Runs/Match</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {playerAnalysisData.formatPerformance.map((format, index) => (
-                    <tr key={index} className="border-b border-gray-100 dark:border-gray-800">
-                      <td className="py-2 px-3 font-medium">{format.format}</td>
-                      <td className="py-2 px-3 text-right">{format.matches}</td>
-                      <td className="py-2 px-3 text-right">{format.runs.toLocaleString()}</td>
-                      <td className="py-2 px-3 text-right">{format.average}</td>
-                      <td className="py-2 px-3 text-right">{format.strikeRate}</td>
-                      <td className="py-2 px-3 text-right">{Math.round(format.runs / format.matches)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+
         </>
       )}
     </div>

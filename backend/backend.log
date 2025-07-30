@@ -218,3 +218,142 @@ INFO:services.cricket_service:Retrieved 260 international cricket players
 INFO:werkzeug:127.0.0.1 - - [29/Jul/2025 21:12:23] "GET /players HTTP/1.1" 200 -
 INFO:__main__:GET http://localhost:5001/players/Babar%20Azam/history - 127.0.0.1
 INFO:werkzeug:127.0.0.1 - - [29/Jul/2025 21:13:22] "[33mGET /players/Babar%20Azam/history HTTP/1.1[0m" 404 -
+INFO:__main__:GET http://localhost:5001/fixtures - 127.0.0.1
+INFO:__main__:GET http://localhost:5001/teams - 127.0.0.1
+INFO:__main__:GET http://localhost:5001/players - 127.0.0.1
+INFO:services.cricket_service:📡 Making CricketData API request: currentMatches
+INFO:services.cricket_service:📡 Making CricketData API request: currentMatches
+INFO:__main__:GET http://localhost:5001/players - 127.0.0.1
+INFO:services.cricket_service:Fetching players from CricketData.org players API
+INFO:services.cricket_service:📡 Making CricketData API request: players
+INFO:services.cricket_service:📊 API Usage: 29/85 (34.1%)
+ERROR:services.cricket_service:❌ API request failed with status 403
+INFO:services.cricket_service:📊 API Usage: 30/85 (35.3%)
+INFO:services.cricket_service:📊 API Usage: 31/85 (36.5%)
+WARNING:services.cricket_service:CricketData players API returned: Unknown error
+ERROR:services.cricket_service:❌ API request failed with status 403
+ERROR:services.cricket_service:❌ API request failed with status 403
+INFO:services.cricket_service:Retrieved 260 international cricket players
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:49:32] "GET /fixtures HTTP/1.1" 200 -
+INFO:services.cricket_service:Retrieved 14 teams: 0 with real data
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:49:32] "GET /players HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:49:32] "GET /teams HTTP/1.1" 200 -
+INFO:__main__:GET http://localhost:5001/fixtures - 127.0.0.1
+INFO:services.cricket_service:⏳ Rate limiting: waiting 2.0s between API calls
+INFO:__main__:GET http://localhost:5001/players - 127.0.0.1
+INFO:__main__:GET http://localhost:5001/players - 127.0.0.1
+INFO:__main__:GET http://localhost:5001/teams - 127.0.0.1
+INFO:services.cricket_service:Fetching players from CricketData.org players API
+INFO:services.cricket_service:⏳ Rate limiting: waiting 2.0s between API calls
+INFO:services.cricket_service:⏳ Rate limiting: waiting 2.0s between API calls
+INFO:services.cricket_service:📡 Making CricketData API request: currentMatches
+INFO:services.cricket_service:📡 Making CricketData API request: currentMatches
+INFO:services.cricket_service:📡 Making CricketData API request: players
+INFO:services.cricket_service:📊 API Usage: 32/85 (37.6%)
+INFO:services.cricket_service:📊 API Usage: 33/85 (38.8%)
+INFO:services.cricket_service:📊 API Usage: 34/85 (40.0%)
+ERROR:services.cricket_service:❌ API request failed with status 403
+ERROR:services.cricket_service:❌ API request failed with status 403
+ERROR:services.cricket_service:❌ API request failed with status 403
+WARNING:services.cricket_service:CricketData players API returned: Unknown error
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:49:34] "GET /fixtures HTTP/1.1" 200 -
+INFO:services.cricket_service:Retrieved 14 teams: 0 with real data
+INFO:services.cricket_service:Retrieved 260 international cricket players
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:49:34] "GET /teams HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:49:34] "GET /players HTTP/1.1" 200 -
+INFO:__main__:GET http://localhost:5001/players/Shaheen%20Afridi/history - 127.0.0.1
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:53:17] "[33mGET /players/Shaheen%20Afridi/history HTTP/1.1[0m" 404 -
+INFO:__main__:GET http://localhost:5001/players/Mohammad%20Rizwan/history - 127.0.0.1
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:54:21] "[33mGET /players/Mohammad%20Rizwan/history HTTP/1.1[0m" 404 -
+INFO:__main__:GET http://localhost:5001/players/Virat%20Kohli/history - 127.0.0.1
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:54:52] "[33mGET /players/Virat%20Kohli/history HTTP/1.1[0m" 404 -
+INFO:__main__:GET http://localhost:5001/fixtures - 127.0.0.1
+INFO:__main__:GET http://localhost:5001/teams - 127.0.0.1
+INFO:__main__:GET http://localhost:5001/players - 127.0.0.1
+INFO:services.cricket_service:📡 Making CricketData API request: currentMatches
+INFO:services.cricket_service:📡 Making CricketData API request: currentMatches
+INFO:__main__:GET http://localhost:5001/players - 127.0.0.1
+INFO:services.cricket_service:Fetching players from CricketData.org players API
+INFO:services.cricket_service:📡 Making CricketData API request: players
+INFO:services.cricket_service:📊 API Usage: 35/85 (41.2%)
+INFO:services.cricket_service:📊 API Usage: 36/85 (42.4%)
+ERROR:services.cricket_service:❌ API request failed with status 403
+ERROR:services.cricket_service:❌ API request failed with status 403
+INFO:services.cricket_service:Retrieved 14 teams: 0 with real data
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:59:55] "GET /fixtures HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:59:55] "GET /teams HTTP/1.1" 200 -
+INFO:services.cricket_service:📊 API Usage: 37/85 (43.5%)
+ERROR:services.cricket_service:❌ API request failed with status 403
+WARNING:services.cricket_service:CricketData players API returned: Unknown error
+INFO:services.cricket_service:Retrieved 260 international cricket players
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:59:55] "GET /players HTTP/1.1" 200 -
+INFO:__main__:GET http://localhost:5001/fixtures - 127.0.0.1
+INFO:services.cricket_service:⏳ Rate limiting: waiting 2.0s between API calls
+INFO:__main__:GET http://localhost:5001/teams - 127.0.0.1
+INFO:services.cricket_service:⏳ Rate limiting: waiting 2.0s between API calls
+INFO:__main__:GET http://localhost:5001/players - 127.0.0.1
+INFO:__main__:GET http://localhost:5001/players - 127.0.0.1
+INFO:services.cricket_service:Fetching players from CricketData.org players API
+INFO:services.cricket_service:⏳ Rate limiting: waiting 2.0s between API calls
+INFO:services.cricket_service:📡 Making CricketData API request: currentMatches
+INFO:services.cricket_service:📡 Making CricketData API request: players
+INFO:services.cricket_service:📡 Making CricketData API request: currentMatches
+INFO:services.cricket_service:📊 API Usage: 38/85 (44.7%)
+ERROR:services.cricket_service:❌ API request failed with status 403
+INFO:services.cricket_service:Retrieved 14 teams: 0 with real data
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:59:57] "GET /teams HTTP/1.1" 200 -
+INFO:services.cricket_service:📊 API Usage: 39/85 (45.9%)
+ERROR:services.cricket_service:❌ API request failed with status 403
+WARNING:services.cricket_service:CricketData players API returned: Unknown error
+INFO:services.cricket_service:Retrieved 260 international cricket players
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:59:57] "GET /players HTTP/1.1" 200 -
+INFO:services.cricket_service:📊 API Usage: 40/85 (47.1%)
+ERROR:services.cricket_service:❌ API request failed with status 403
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 14:59:57] "GET /fixtures HTTP/1.1" 200 -
+INFO:__main__:GET http://localhost:5001/players/Kane%20Williamson/history - 127.0.0.1
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 15:00:00] "[33mGET /players/Kane%20Williamson/history HTTP/1.1[0m" 404 -
+INFO:__main__:GET http://localhost:5001/fixtures - 127.0.0.1
+INFO:__main__:GET http://localhost:5001/teams - 127.0.0.1
+INFO:__main__:GET http://localhost:5001/players - 127.0.0.1
+INFO:services.cricket_service:📡 Making CricketData API request: currentMatches
+INFO:services.cricket_service:📡 Making CricketData API request: currentMatches
+INFO:__main__:GET http://localhost:5001/players - 127.0.0.1
+INFO:services.cricket_service:Fetching players from CricketData.org players API
+INFO:services.cricket_service:📡 Making CricketData API request: players
+INFO:services.cricket_service:📊 API Usage: 41/85 (48.2%)
+ERROR:services.cricket_service:❌ API request failed with status 403
+WARNING:services.cricket_service:CricketData players API returned: Unknown error
+INFO:services.cricket_service:Retrieved 260 international cricket players
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 15:07:58] "GET /players HTTP/1.1" 200 -
+INFO:services.cricket_service:📊 API Usage: 42/85 (49.4%)
+ERROR:services.cricket_service:❌ API request failed with status 403
+INFO:services.cricket_service:📊 API Usage: 43/85 (50.6%)
+ERROR:services.cricket_service:❌ API request failed with status 403
+INFO:services.cricket_service:Retrieved 14 teams: 0 with real data
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 15:07:58] "GET /fixtures HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 15:07:58] "GET /teams HTTP/1.1" 200 -
+INFO:__main__:GET http://localhost:5001/players - 127.0.0.1
+INFO:__main__:GET http://localhost:5001/players - 127.0.0.1
+INFO:services.cricket_service:Fetching players from CricketData.org players API
+INFO:services.cricket_service:⏳ Rate limiting: waiting 2.0s between API calls
+INFO:__main__:GET http://localhost:5001/fixtures - 127.0.0.1
+INFO:__main__:GET http://localhost:5001/teams - 127.0.0.1
+INFO:services.cricket_service:⏳ Rate limiting: waiting 2.0s between API calls
+INFO:services.cricket_service:⏳ Rate limiting: waiting 2.0s between API calls
+INFO:services.cricket_service:📡 Making CricketData API request: players
+INFO:services.cricket_service:📡 Making CricketData API request: currentMatches
+INFO:services.cricket_service:📡 Making CricketData API request: currentMatches
+INFO:services.cricket_service:📊 API Usage: 44/85 (51.8%)
+INFO:services.cricket_service:📊 API Usage: 45/85 (52.9%)
+ERROR:services.cricket_service:❌ API request failed with status 403
+ERROR:services.cricket_service:❌ API request failed with status 403
+INFO:services.cricket_service:📊 API Usage: 46/85 (54.1%)
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 15:08:00] "GET /fixtures HTTP/1.1" 200 -
+INFO:services.cricket_service:Retrieved 14 teams: 0 with real data
+ERROR:services.cricket_service:❌ API request failed with status 403
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 15:08:00] "GET /teams HTTP/1.1" 200 -
+WARNING:services.cricket_service:CricketData players API returned: Unknown error
+INFO:services.cricket_service:Retrieved 260 international cricket players
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 15:08:00] "GET /players HTTP/1.1" 200 -
+INFO:__main__:GET http://localhost:5001/players/Steve%20Smith/history - 127.0.0.1
+INFO:werkzeug:127.0.0.1 - - [30/Jul/2025 15:09:59] "[33mGET /players/Steve%20Smith/history HTTP/1.1[0m" 404 -
