@@ -112,6 +112,20 @@ export const getPlayers = async (teamId = null) => {
   }
 };
 
+// Player Match History
+export const getPlayerMatchHistory = async (playerName) => {
+  try {
+    console.log(`🏏 Fetching match history for ${playerName} from backend API...`);
+    const encodedName = encodeURIComponent(playerName);
+    const response = await backendAPI.get(`/players/${encodedName}/history`);
+    console.log('✅ Player match history response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`❌ Failed to fetch match history for ${playerName}:`, error);
+    throw error;
+  }
+};
+
 // Venues
 export const getVenues = async () => {
   try {

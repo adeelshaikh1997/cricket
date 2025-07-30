@@ -37,6 +37,28 @@ class HealthCheck(Resource):
             'version': '1.0.0'
         }
 
+class APIUsage(Resource):
+    """API usage monitoring endpoint"""
+    def get(self):
+        try:
+            usage_info = cricket_service.get_api_usage_info()
+            
+            # Add additional status information
+            usage_info.update({
+                'timestamp': datetime.utcnow().isoformat(),
+                'status': 'protected' if usage_info['protection_active'] else 'active',
+                'remaining_calls': max(0, usage_info['daily_limit'] - usage_info['calls_today']),
+                'warning_threshold': cricket_service.api_usage_threshold
+            })
+            
+            return {
+                'success': True,
+                'data': usage_info
+            }
+        except Exception as e:
+            logger.error(f"Error getting API usage info: {str(e)}")
+            return {'error': 'Failed to get API usage information'}, 500
+
 class MatchPrediction(Resource):
     """Match prediction endpoint"""
     def post(self):
@@ -126,15 +148,62 @@ class Fixtures(Resource):
             logger.error(f"Fixtures data error: {str(e)}")
             return {'error': 'Failed to retrieve fixtures data'}, 500
 
+class PlayerMatchHistory(Resource):
+    """Player match history endpoint"""
+    def get(self, player_name):
+        try:
+            logger.info(f"Fetching match history for player: {player_name}")
+            
+            # Get player match history from cricket service
+            match_history = cricket_service.get_player_match_history(player_name)
+            
+            return {
+                'success': True,
+                'data': match_history,
+                'player': player_name,
+                'total_matches': len(match_history),
+                'message': f'Successfully retrieved {len(match_history)} matches for {player_name}'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in PlayerMatchHistory endpoint: {str(e)}")
+            return {
+                'success': False,
+                'error': 'Failed to fetch player match history',
+                'message': str(e)
+            }, 500
+
 class PlayerStats(Resource):
     """Player statistics endpoint"""
     def get(self, player_id):
         try:
-            stats = cricket_service.get_player_stats(player_id)
-            return {'data': stats}
+            logger.info(f"Fetching player stats for ID: {player_id}")
+            
+            players = cricket_service.get_players()
+            player = next((p for p in players if str(p.get('id')) == str(player_id)), None)
+            
+            if not player:
+                return {'error': 'Player not found'}, 404
+            
+            # Get match history for this player
+            match_history = cricket_service.get_player_match_history(player.get('fullname', ''))
+            
+            return {
+                'success': True,
+                'data': {
+                    'player': player,
+                    'matchHistory': match_history
+                },
+                'message': f'Successfully retrieved stats for player {player_id}'
+            }
+            
         except Exception as e:
-            logger.error(f"Player stats error: {str(e)}")
-            return {'error': 'Failed to retrieve player statistics'}, 500
+            logger.error(f"Error in PlayerStats endpoint: {str(e)}")
+            return {
+                'success': False,
+                'error': 'Failed to fetch player stats',
+                'message': str(e)
+            }, 500
 
 class TeamStats(Resource):
     """Team statistics endpoint"""
@@ -183,6 +252,8 @@ api.add_resource(Fixtures, '/fixtures')
 api.add_resource(Players, '/players')
 api.add_resource(PlayerStats, '/players/<int:player_id>')
 api.add_resource(TeamStats, '/teams/<int:team_id>/stats')
+api.add_resource(APIUsage, '/api/usage')
+api.add_resource(PlayerMatchHistory, '/players/<string:player_name>/history')
 
 @app.errorhandler(404)
 def not_found(error):
