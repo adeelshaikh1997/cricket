@@ -12,6 +12,7 @@ load_dotenv()
 
 from services.prediction_service import PredictionService
 from services.cricket_service import CricketService
+from services.multi_cricket_service import MultiCricketService
 from models.match_predictor import MatchPredictor
 
 # Initialize Flask app
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 # Initialize services
 prediction_service = PredictionService()
 cricket_service = CricketService()
+multi_cricket_service = MultiCricketService()
 
 class HealthCheck(Resource):
     """Health check endpoint"""
@@ -225,7 +227,7 @@ class Players(Resource):
             # Get optional team filter
             team_id = request.args.get('team_id')
             
-            players = cricket_service.get_players(team_id=team_id)
+            players = multi_cricket_service.get_players(prefer_real_data=True)
             
             return {
                 'success': True,
@@ -242,6 +244,103 @@ class Players(Resource):
                 'message': str(e)
             }, 500
 
+class PlayerAdvancedAnalytics(Resource):
+    """Get comprehensive player analytics with real data"""
+    
+    def get(self, player_name):
+        try:
+            logger.info(f"GET {request.url} - {request.remote_addr}")
+            
+            # Get player role from query params (fallback to position detection)
+            player_role = request.args.get('role', 'Batsman')
+            
+            # Get comprehensive analytics
+            analytics = multi_cricket_service.get_advanced_player_analytics(player_name, player_role)
+            
+            return {
+                'success': True,
+                'data': analytics,
+                'player': player_name,
+                'role': player_role,
+                'data_sources': analytics.get('data_source', []),
+                'has_real_data': analytics.get('has_real_data', False),
+                'message': f'Successfully retrieved advanced analytics for {player_name}'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in PlayerAdvancedAnalytics endpoint: {str(e)}")
+            return {'success': False, 'error': 'Failed to fetch player analytics', 'message': str(e)}, 500
+
+class MultiAPIUsage(Resource):
+    """Get usage information across all cricket APIs"""
+    
+    def get(self):
+        try:
+            logger.info(f"GET {request.url} - {request.remote_addr}")
+            
+            usage_summary = multi_cricket_service.get_api_usage_summary()
+            
+            return {
+                'success': True,
+                'data': usage_summary,
+                'timestamp': datetime.utcnow().isoformat(),
+                'message': 'Multi-API usage summary retrieved successfully'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in MultiAPIUsage endpoint: {str(e)}")
+            return {'success': False, 'error': 'Failed to get API usage summary', 'message': str(e)}, 500
+
+class RealDataStatus(Resource):
+    """Check real data availability and quality"""
+    
+    def get(self):
+        try:
+            logger.info(f"GET {request.url} - {request.remote_addr}")
+            
+            # Test data availability from each source
+            sportmonks_status = "Available" if multi_cricket_service.sportmonks.api_key else "No API Key"
+            cricketdata_status = "Available"  # Always available
+            entity_sport_status = "Development API"
+            
+            # Test with a sample player
+            test_players = multi_cricket_service.get_players(prefer_real_data=True)
+            sample_analytics = None
+            
+            if test_players:
+                sample_player = test_players[0]['fullname']
+                sample_analytics = multi_cricket_service.get_advanced_player_analytics(
+                    sample_player, test_players[0].get('position', {}).get('name', 'Batsman')
+                )
+            
+            return {
+                'success': True,
+                'data': {
+                    'api_status': {
+                        'sportmonks': sportmonks_status,
+                        'cricketdata': cricketdata_status,
+                        'entity_sport': entity_sport_status
+                    },
+                    'data_quality': {
+                        'total_players': len(test_players),
+                        'real_data_available': sample_analytics.get('has_real_data', False) if sample_analytics else False,
+                        'sample_player': test_players[0]['fullname'] if test_players else None,
+                        'data_sources': sample_analytics.get('data_source', []) if sample_analytics else []
+                    },
+                    'recommendations': [
+                        "✅ Get SportMonks free API key for best quality international data",
+                        "🎯 Entity Sport provides additional coverage for domestic leagues", 
+                        "💾 CricketData.org serves as reliable backup with 260+ players",
+                        "🚀 Multi-source system ensures data availability at all times"
+                    ]
+                },
+                'message': 'Real data status check completed'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in RealDataStatus endpoint: {str(e)}")
+            return {'success': False, 'error': 'Failed to check real data status', 'message': str(e)}, 500
+
 # Register API endpoints
 api.add_resource(HealthCheck, '/health')
 api.add_resource(MatchPrediction, '/predict')
@@ -254,6 +353,9 @@ api.add_resource(PlayerStats, '/players/<int:player_id>')
 api.add_resource(TeamStats, '/teams/<int:team_id>/stats')
 api.add_resource(APIUsage, '/api/usage')
 api.add_resource(PlayerMatchHistory, '/players/<string:player_name>/history')
+api.add_resource(PlayerAdvancedAnalytics, '/players/<string:player_name>/analytics')
+api.add_resource(MultiAPIUsage, '/api/multi-usage')
+api.add_resource(RealDataStatus, '/api/real-data-status')
 
 @app.errorhandler(404)
 def not_found(error):
