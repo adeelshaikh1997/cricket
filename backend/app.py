@@ -11,8 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from services.prediction_service import PredictionService
-from services.cricket_service import CricketService
-from services.multi_cricket_service import MultiCricketService
+from services.multi_cricket_service import CricketService  # SportMonks-only service
 from models.match_predictor import MatchPredictor
 
 # Initialize Flask app
@@ -24,19 +23,19 @@ api = Api(app)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize services
+# Initialize services - SportMonks Premium only
 prediction_service = PredictionService()
-cricket_service = CricketService()
-multi_cricket_service = MultiCricketService()
+cricket_service = CricketService()  # SportMonks Premium service
 
 class HealthCheck(Resource):
     """Health check endpoint"""
     def get(self):
         return {
             'status': 'healthy',
-            'message': 'Cricklytics Backend API is running',
+            'message': 'Cricklytics Premium Backend API is running',
             'timestamp': datetime.utcnow().isoformat(),
-            'version': '1.0.0'
+            'version': '2.0.0 - SportMonks Premium',
+            'data_source': 'SportMonks Premium API'
         }
 
 class APIUsage(Resource):
@@ -48,9 +47,8 @@ class APIUsage(Resource):
             # Add additional status information
             usage_info.update({
                 'timestamp': datetime.utcnow().isoformat(),
-                'status': 'protected' if usage_info['protection_active'] else 'active',
-                'remaining_calls': max(0, usage_info['daily_limit'] - usage_info['calls_today']),
-                'warning_threshold': cricket_service.api_usage_threshold
+                'service_type': 'SportMonks Premium',
+                'status': 'active'
             })
             
             return {
@@ -98,264 +96,212 @@ class MatchPrediction(Resource):
             logger.error(traceback.format_exc())
             return {'error': 'Internal server error during prediction'}, 500
 
-class ModelInfo(Resource):
-    """Model information endpoint"""
-    def get(self):
-        try:
-            model_info = prediction_service.get_model_info()
-            return model_info
-        except Exception as e:
-            logger.error(f"Model info error: {str(e)}")
-            return {'error': 'Failed to retrieve model information'}, 500
+
 
 class Teams(Resource):
-    """Teams data endpoint"""
+    """Get all cricket teams"""
     def get(self):
         try:
             teams = cricket_service.get_teams()
-            return {'data': teams}
+            
+            return {
+                'success': True,
+                'data': teams,
+                'count': len(teams),
+                'source': 'SportMonks Premium',
+                'timestamp': datetime.utcnow().isoformat()
+            }
         except Exception as e:
-            logger.error(f"Teams data error: {str(e)}")
-            return {'error': 'Failed to retrieve teams data'}, 500
+            logger.error(f"Error fetching teams: {str(e)}")
+            return {'error': 'Failed to fetch teams'}, 500
 
 class Venues(Resource):
-    """Venues data endpoint"""
+    """Get all cricket venues"""
     def get(self):
         try:
             venues = cricket_service.get_venues()
-            return {'data': venues}
+            
+            return {
+                'success': True,
+                'data': venues,
+                'count': len(venues),
+                'source': 'SportMonks Premium',
+                'timestamp': datetime.utcnow().isoformat()
+            }
         except Exception as e:
-            logger.error(f"Venues data error: {str(e)}")
-            return {'error': 'Failed to retrieve venues data'}, 500
+            logger.error(f"Error fetching venues: {str(e)}")
+            return {'error': 'Failed to fetch venues'}, 500
 
 class Fixtures(Resource):
-    """Fixtures data endpoint"""
+    """Get upcoming cricket fixtures"""
     def get(self):
         try:
-            # Get query parameters
-            team_id = request.args.get('team_id')
-            venue_id = request.args.get('venue_id')
-            date_from = request.args.get('date_from')
-            date_to = request.args.get('date_to')
-            
-            fixtures = cricket_service.get_fixtures(
-                team_id=team_id,
-                venue_id=venue_id,
-                date_from=date_from,
-                date_to=date_to
-            )
-            
-            return {'data': fixtures}
-        except Exception as e:
-            logger.error(f"Fixtures data error: {str(e)}")
-            return {'error': 'Failed to retrieve fixtures data'}, 500
-
-class PlayerMatchHistory(Resource):
-    """Player match history endpoint"""
-    def get(self, player_name):
-        try:
-            logger.info(f"Fetching match history for player: {player_name}")
-            
-            # Get player match history from cricket service
-            match_history = cricket_service.get_player_match_history(player_name)
+            days_ahead = request.args.get('days', default=30, type=int)
+            fixtures = cricket_service.get_fixtures(days_ahead=days_ahead)
             
             return {
                 'success': True,
-                'data': match_history,
-                'player': player_name,
-                'total_matches': len(match_history),
-                'message': f'Successfully retrieved {len(match_history)} matches for {player_name}'
+                'data': fixtures,
+                'count': len(fixtures),
+                'source': 'SportMonks Premium',
+                'timestamp': datetime.utcnow().isoformat()
             }
-            
         except Exception as e:
-            logger.error(f"Error in PlayerMatchHistory endpoint: {str(e)}")
-            return {
-                'success': False,
-                'error': 'Failed to fetch player match history',
-                'message': str(e)
-            }, 500
+            logger.error(f"Error fetching fixtures: {str(e)}")
+            return {'error': 'Failed to fetch fixtures'}, 500
 
-class PlayerStats(Resource):
-    """Player statistics endpoint"""
-    def get(self, player_id):
-        try:
-            logger.info(f"Fetching player stats for ID: {player_id}")
-            
-            players = cricket_service.get_players()
-            player = next((p for p in players if str(p.get('id')) == str(player_id)), None)
-            
-            if not player:
-                return {'error': 'Player not found'}, 404
-            
-            # Get match history for this player
-            match_history = cricket_service.get_player_match_history(player.get('fullname', ''))
-            
-            return {
-                'success': True,
-                'data': {
-                    'player': player,
-                    'matchHistory': match_history
-                },
-                'message': f'Successfully retrieved stats for player {player_id}'
-            }
-            
-        except Exception as e:
-            logger.error(f"Error in PlayerStats endpoint: {str(e)}")
-            return {
-                'success': False,
-                'error': 'Failed to fetch player stats',
-                'message': str(e)
-            }, 500
 
-class TeamStats(Resource):
-    """Team statistics endpoint"""
-    def get(self, team_id):
-        try:
-            stats = cricket_service.get_team_stats(team_id)
-            return {'data': stats}
-        except Exception as e:
-            logger.error(f"Team stats error: {str(e)}")
-            return {'error': 'Failed to retrieve team statistics'}, 500
 
 class Players(Resource):
-    """Get all international cricket players"""
-    
+    """Get all cricket players"""
     def get(self):
         try:
-            logger.info(f"GET {request.url} - {request.remote_addr}")
+            team_id = request.args.get('team_id', type=int)
+            country_id = request.args.get('country_id', type=int)
             
-            # Get optional team filter
-            team_id = request.args.get('team_id')
-            
-            players = multi_cricket_service.get_players(prefer_real_data=True)
+            players = cricket_service.get_players(team_id=team_id, country_id=country_id)
             
             return {
                 'success': True,
                 'data': players,
-                'total': len(players),
-                'message': f'Successfully retrieved {len(players)} international cricket players'
+                'count': len(players),
+                'source': 'SportMonks Premium',
+                'timestamp': datetime.utcnow().isoformat()
             }
-            
         except Exception as e:
-            logger.error(f"Error in Players endpoint: {str(e)}")
-            return {
-                'success': False,
-                'error': 'Failed to fetch players',
-                'message': str(e)
-            }, 500
+            logger.error(f"Error fetching players: {str(e)}")
+            return {'error': 'Failed to fetch players'}, 500
 
-class PlayerAdvancedAnalytics(Resource):
-    """Get comprehensive player analytics with real data"""
-    
+
+
+class LiveMatches(Resource):
+    """Get live cricket matches"""
+    def get(self):
+        try:
+            live_matches = cricket_service.get_live_matches()
+            
+            return {
+                'success': True,
+                'data': live_matches,
+                'count': len(live_matches),
+                'source': 'SportMonks Premium Live',
+                'timestamp': datetime.utcnow().isoformat()
+            }
+        except Exception as e:
+            logger.error(f"Error fetching live matches: {str(e)}")
+            return {'error': 'Failed to fetch live matches'}, 500
+
+class PlayerAnalytics(Resource):
+    """Get advanced player analytics"""
     def get(self, player_name):
         try:
-            logger.info(f"GET {request.url} - {request.remote_addr}")
+            # Get query parameters
+            player_role = request.args.get('role', default='Batsman')
             
-            # Get player role from query params (fallback to position detection)
-            player_role = request.args.get('role', 'Batsman')
-            
-            # Get comprehensive analytics
-            analytics = multi_cricket_service.get_advanced_player_analytics(player_name, player_role)
+            # Get comprehensive analytics from SportMonks Premium
+            analytics = cricket_service.get_advanced_player_analytics(player_name, player_role)
             
             return {
                 'success': True,
                 'data': analytics,
                 'player': player_name,
                 'role': player_role,
-                'data_sources': analytics.get('data_source', []),
-                'has_real_data': analytics.get('has_real_data', False),
-                'message': f'Successfully retrieved advanced analytics for {player_name}'
+                'source': 'SportMonks Premium Analytics',
+                'timestamp': datetime.utcnow().isoformat()
             }
-            
         except Exception as e:
-            logger.error(f"Error in PlayerAdvancedAnalytics endpoint: {str(e)}")
-            return {'success': False, 'error': 'Failed to fetch player analytics', 'message': str(e)}, 500
+            logger.error(f"Error getting analytics for {player_name}: {str(e)}")
+            return {'error': f'Failed to get analytics for {player_name}'}, 500
 
-class MultiAPIUsage(Resource):
-    """Get usage information across all cricket APIs"""
-    
-    def get(self):
+class PlayerMatchHistory(Resource):
+    """Get player match history"""
+    def get(self, player_name):
         try:
-            logger.info(f"GET {request.url} - {request.remote_addr}")
-            
-            usage_summary = multi_cricket_service.get_api_usage_summary()
+            limit = request.args.get('limit', default=20, type=int)
+            match_history = cricket_service.get_player_match_history(player_name, limit=limit)
             
             return {
                 'success': True,
-                'data': usage_summary,
-                'timestamp': datetime.utcnow().isoformat(),
-                'message': 'Multi-API usage summary retrieved successfully'
+                'data': match_history,
+                'count': len(match_history),
+                'player': player_name,
+                'source': 'SportMonks Premium',
+                'timestamp': datetime.utcnow().isoformat()
             }
-            
         except Exception as e:
-            logger.error(f"Error in MultiAPIUsage endpoint: {str(e)}")
-            return {'success': False, 'error': 'Failed to get API usage summary', 'message': str(e)}, 500
+            logger.error(f"Error getting match history for {player_name}: {str(e)}")
+            return {'error': f'Failed to get match history for {player_name}'}, 500
 
-class RealDataStatus(Resource):
-    """Check real data availability and quality"""
-    
+class ServiceStatus(Resource):
+    """Get comprehensive service status"""
     def get(self):
         try:
-            logger.info(f"GET {request.url} - {request.remote_addr}")
-            
-            # Test data availability from each source
-            sportmonks_status = "Available" if multi_cricket_service.sportmonks.api_key else "No API Key"
-            cricketdata_status = "Available"  # Always available
-            entity_sport_status = "Development API"
-            
-            # Test with a sample player
-            test_players = multi_cricket_service.get_players(prefer_real_data=True)
-            sample_analytics = None
-            
-            if test_players:
-                sample_player = test_players[0]['fullname']
-                sample_analytics = multi_cricket_service.get_advanced_player_analytics(
-                    sample_player, test_players[0].get('position', {}).get('name', 'Batsman')
-                )
+            service_status = cricket_service.get_api_usage_summary()
             
             return {
                 'success': True,
-                'data': {
-                    'api_status': {
-                        'sportmonks': sportmonks_status,
-                        'cricketdata': cricketdata_status,
-                        'entity_sport': entity_sport_status
-                    },
-                    'data_quality': {
-                        'total_players': len(test_players),
-                        'real_data_available': sample_analytics.get('has_real_data', False) if sample_analytics else False,
-                        'sample_player': test_players[0]['fullname'] if test_players else None,
-                        'data_sources': sample_analytics.get('data_source', []) if sample_analytics else []
-                    },
-                    'recommendations': [
-                        "✅ Get SportMonks free API key for best quality international data",
-                        "🎯 Entity Sport provides additional coverage for domestic leagues", 
-                        "💾 CricketData.org serves as reliable backup with 260+ players",
-                        "🚀 Multi-source system ensures data availability at all times"
-                    ]
-                },
-                'message': 'Real data status check completed'
+                'service': 'Cricklytics Premium',
+                'version': '2.0.0',
+                'data_source': 'SportMonks Premium API Only',
+                'status': service_status,
+                'features': [
+                    '🔴 Live Cricket Scores & Commentary',
+                    '📊 Comprehensive Player Statistics', 
+                    '🏆 Team Rankings & Detailed Data',
+                    '🏟️ All International Cricket Venues',
+                    '📈 Historical Match Data & Analytics',
+                    '⚡ Ball-by-ball Live Commentary',
+                    '🌤️ Weather & Pitch Condition Reports',
+                    '🏏 Official Tournament & League Data',
+                    '🔄 Real-time Score Updates',
+                    '🎯 Advanced Predictive Analytics'
+                ],
+                'premium_benefits': [
+                    'High rate limits (300/min, 10K/hour)',
+                    'Real-time data updates',
+                    'Comprehensive player career statistics',
+                    'Advanced situational analytics',
+                    'Official tournament data',
+                    'Historical match database access'
+                ],
+                'timestamp': datetime.utcnow().isoformat()
             }
-            
         except Exception as e:
-            logger.error(f"Error in RealDataStatus endpoint: {str(e)}")
-            return {'success': False, 'error': 'Failed to check real data status', 'message': str(e)}, 500
+            logger.error(f"Error getting service status: {str(e)}")
+            return {'error': 'Failed to get service status'}, 500
 
-# Register API endpoints
+class TestPlayers(Resource):
+    """Quick test endpoint with minimal fake players"""
+    def get(self):
+        fake_players = [
+            {'id': 1, 'fullname': 'Virat Kohli', 'team': 'India National Team', 'team_code': 'IND', 'position': 'Batsman', 'battingstyle': 'Right-hand bat', 'country': 'India', 'ranking': 1, 'is_international': True},
+            {'id': 2, 'fullname': 'Steve Smith', 'team': 'Australia National Team', 'team_code': 'AUS', 'position': 'Batsman', 'battingstyle': 'Right-hand bat', 'country': 'Australia', 'ranking': 2, 'is_international': True},
+            {'id': 3, 'fullname': 'Joe Root', 'team': 'England National Team', 'team_code': 'ENG', 'position': 'Batsman', 'battingstyle': 'Right-hand bat', 'country': 'England', 'ranking': 3, 'is_international': True},
+            {'id': 4, 'fullname': 'Kane Williamson', 'team': 'New Zealand National Team', 'team_code': 'NZ', 'position': 'Batsman', 'battingstyle': 'Right-hand bat', 'country': 'New Zealand', 'ranking': 4, 'is_international': True},
+            {'id': 5, 'fullname': 'Babar Azam', 'team': 'Pakistan National Team', 'team_code': 'PAK', 'position': 'Batsman', 'battingstyle': 'Right-hand bat', 'country': 'Pakistan', 'ranking': 5, 'is_international': True}
+        ]
+        
+        return {
+            'success': True,
+            'data': fake_players,
+            'count': len(fake_players),
+            'source': 'Test Data',
+            'timestamp': datetime.utcnow().isoformat()
+        }
+
+# Register API routes
 api.add_resource(HealthCheck, '/health')
+api.add_resource(APIUsage, '/api-usage')
 api.add_resource(MatchPrediction, '/predict')
-api.add_resource(ModelInfo, '/model/info')
 api.add_resource(Teams, '/teams')
-api.add_resource(Venues, '/venues')
-api.add_resource(Fixtures, '/fixtures')
 api.add_resource(Players, '/players')
-api.add_resource(PlayerStats, '/players/<int:player_id>')
-api.add_resource(TeamStats, '/teams/<int:team_id>/stats')
-api.add_resource(APIUsage, '/api/usage')
-api.add_resource(PlayerMatchHistory, '/players/<string:player_name>/history')
-api.add_resource(PlayerAdvancedAnalytics, '/players/<string:player_name>/analytics')
-api.add_resource(MultiAPIUsage, '/api/multi-usage')
-api.add_resource(RealDataStatus, '/api/real-data-status')
+api.add_resource(TestPlayers, '/test-players')  # Add test endpoint
+api.add_resource(Venues, '/venues')
+api.add_resource(LiveMatches, '/live-matches')
+api.add_resource(Fixtures, '/fixtures')
+api.add_resource(PlayerAnalytics, '/players/<string:player_name>/analytics')
+api.add_resource(PlayerMatchHistory, '/players/<string:player_name>/matches')
+api.add_resource(ServiceStatus, '/status')
 
 @app.errorhandler(404)
 def not_found(error):
@@ -370,13 +316,11 @@ def log_request_info():
     logger.info(f"{request.method} {request.url} - {request.remote_addr}")
 
 if __name__ == '__main__':
-    # Load environment variables
-    from dotenv import load_dotenv
-    load_dotenv()
+    port = int(os.environ.get('PORT', 5001))
+    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     
-    # Run app
-    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    port = int(os.getenv('PORT', 5001))  # Changed from 5000 to 5001 to avoid AirPlay conflict
+    logger.info("🚀 Starting Cricklytics Premium Backend")
+    logger.info("💎 Powered by SportMonks Premium API")
+    logger.info(f"🔗 Running on http://localhost:{port}")
     
-    logger.info(f"Starting Cricklytics Backend API on port {port}")
-    app.run(host='0.0.0.0', port=port, debug=debug_mode) 
+    app.run(host='0.0.0.0', port=port, debug=debug) 

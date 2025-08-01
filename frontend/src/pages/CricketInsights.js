@@ -71,7 +71,7 @@ const CricketInsights = () => {
         setRealData(prev => ({
           ...prev,
           loading: false,
-          error: 'Unable to load real cricket data. Showing sample data for demonstration.'
+          error: 'Unable to load cricket data from SportMonks Premium. Please check your connection.'
         }));
       }
     };
@@ -214,9 +214,7 @@ const CricketInsights = () => {
     { month: 'Jun', india: 8, australia: 6, england: 7 },
   ];
 
-  const teams = realData.teams.length > 0 ? 
-    realData.teams.slice(0, 10).map(team => team.name) :
-    ['India', 'Australia', 'England', 'New Zealand', 'South Africa', 'Pakistan'];
+  const teams = realData.teams.slice(0, 10).map(team => team.name);
 
   const renderCustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -239,7 +237,7 @@ const CricketInsights = () => {
       <div className="flex items-center justify-center h-64">
         <div className="flex items-center space-x-2">
           <Loader2 className="w-8 h-8 animate-spin text-cricket-green" />
-          <span className="text-lg text-gray-600 dark:text-gray-300">Loading real cricket insights...</span>
+          <span className="text-lg text-gray-600 dark:text-gray-300">Loading SportMonks Premium cricket insights...</span>
         </div>
       </div>
     );
@@ -277,7 +275,7 @@ const CricketInsights = () => {
           <div className="flex items-center">
             <Trophy className="h-5 w-5 text-green-400 mr-3" />
             <p className="text-sm text-green-700 dark:text-green-300">
-              ✅ Real cricket data loaded: {realData.teams.length} teams, {realData.fixtures.length} fixtures from CricketData.org API
+              ✅ Premium cricket data loaded: {realData.teams.length} teams, {realData.fixtures.length} fixtures from SportMonks Premium API
             </p>
           </div>
         </div>

@@ -47,7 +47,7 @@ const MatchPredictor = () => {
         setRealData(prev => ({
           ...prev,
           loading: false,
-          error: 'Unable to load real cricket data. Using sample data for demonstration.'
+          error: 'Unable to load cricket data from SportMonks Premium. Please check your connection.'
         }));
       }
     };
@@ -55,29 +55,10 @@ const MatchPredictor = () => {
     loadRealData();
   }, []);
 
-  // Generate mock venues if no real data
-  const generateMockVenues = () => [
-    { id: 1, name: 'Melbourne Cricket Ground (MCG)' },
-    { id: 2, name: 'Lord\'s Cricket Ground' },
-    { id: 3, name: 'Eden Gardens' },
-    { id: 4, name: 'Wankhede Stadium' },
-    { id: 5, name: 'Sydney Cricket Ground (SCG)' },
-    { id: 6, name: 'The Oval' },
-    { id: 7, name: 'Old Trafford' },
-    { id: 8, name: 'Newlands' }
-  ];
+  // No mock venues - only use real API data
 
-  // Get available teams and venues
-  const availableTeams = realData.teams.length > 0 ? realData.teams : [
-    { id: 1, name: 'India', code: 'IND' },
-    { id: 2, name: 'Australia', code: 'AUS' },
-    { id: 3, name: 'England', code: 'ENG' },
-    { id: 4, name: 'New Zealand', code: 'NZ' },
-    { id: 5, name: 'South Africa', code: 'SA' },
-    { id: 6, name: 'Pakistan', code: 'PAK' },
-    { id: 7, name: 'West Indies', code: 'WI' },
-    { id: 8, name: 'Sri Lanka', code: 'SL' }
-  ];
+  // Get available teams from SportMonks Premium API only
+  const availableTeams = realData.teams;
 
   // Sort teams by ranking for better UX
   const sortedTeams = availableTeams.sort((a, b) => {
@@ -90,7 +71,7 @@ const MatchPredictor = () => {
   const internationalTeams = sortedTeams.filter(team => team.national_team !== false && (team.ranking || 99) <= 14);
   const liveDataTeams = sortedTeams.filter(team => team.has_real_data && !internationalTeams.includes(team));
 
-  const availableVenues = realData.venues.length > 0 ? realData.venues : generateMockVenues();
+  const availableVenues = realData.venues;
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -136,7 +117,7 @@ const MatchPredictor = () => {
       <div className="flex items-center justify-center h-64">
         <div className="flex items-center space-x-2">
           <Loader2 className="w-8 h-8 animate-spin text-cricket-green" />
-          <span className="text-lg text-gray-600 dark:text-gray-300">Loading real cricket data...</span>
+          <span className="text-lg text-gray-600 dark:text-gray-300">Loading SportMonks Premium cricket data...</span>
         </div>
       </div>
     );
@@ -174,7 +155,7 @@ const MatchPredictor = () => {
           <div className="flex items-center">
             <Trophy className="h-5 w-5 text-green-400 mr-3" />
             <p className="text-sm text-green-700 dark:text-green-300">
-              ✅ Real cricket data loaded: {availableTeams.length} teams, {availableVenues.length} venues from CricketData.org API
+              ✅ Premium cricket data loaded: {availableTeams.length} teams, {availableVenues.length} venues from SportMonks Premium API
             </p>
           </div>
         </div>
