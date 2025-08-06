@@ -9,7 +9,7 @@ import './index.css';
 function App() {
   return (
     <ThemeProvider>
-      <Router>
+      <Router basename="/cricket">
         <Layout>
           <Routes>
             <Route path="/" element={<MatchPredictor />} />
