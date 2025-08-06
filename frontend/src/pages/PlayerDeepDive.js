@@ -7,15 +7,9 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  Legend, 
   ResponsiveContainer,
   LineChart,
   Line,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area,
   RadarChart,
   PolarGrid,
   PolarAngleAxis,
@@ -24,15 +18,10 @@ import {
 } from 'recharts';
 import { 
   User,
-  Trophy,
   Target,
   Loader2,
-  AlertCircle,
-  Search,
-  Star,
-  BarChart3
+  Search
 } from 'lucide-react';
-import { getTeams, getFixtures, getPlayers, getPlayerMatchHistory, getTestPlayers } from '../services/api';
 
 const PlayerDeepDive = () => {
   // Player analysis state
@@ -41,87 +30,13 @@ const PlayerDeepDive = () => {
   const [playerSearchTerm, setPlayerSearchTerm] = useState('');
   const [loadingPlayerStats, setLoadingPlayerStats] = useState(false);
 
-  // Real data state
-  const [realData, setRealData] = useState({
-    teams: [],
-    fixtures: [],
-    players: [],
-    loading: true,
-    error: null
-  });
-
-  // Load real cricket data
+  // Load dummy cricket data
   useEffect(() => {
-    const loadRealData = async () => {
-      try {
-        setRealData(prev => ({ ...prev, loading: true, error: null }));
-        
-        // Load players only for better performance (skip teams and fixtures for now)
-        console.log('🔄 Loading SportMonks Premium players...');
-        
-        let teams = [];
-        let fixtures = [];
-        let players = [];
-        
-        // Retry mechanism for players
-        let retryCount = 0;
-        const maxRetries = 3;
-        
-        while (retryCount < maxRetries && players.length === 0) {
-          try {
-            console.log(`👥 Loading SportMonks Premium players... (attempt ${retryCount + 1})`);
-            const playersResponse = await getPlayers(); // Use real SportMonks Premium data
-            
-            if (playersResponse && playersResponse.success && playersResponse.data && Array.isArray(playersResponse.data)) {
-              players = playersResponse.data;
-              console.log(`✅ SportMonks Premium players loaded: ${players.length} players`);
-              
-              // Log some sample players for debugging
-              if (players.length > 0) {
-                const samplePlayers = players.slice(0, 3);
-                console.log('📋 Sample players:', samplePlayers.map(p => `${p.fullname} (${p.country})`));
-              }
-            } else {
-              console.warn('⚠️ Players response invalid:', playersResponse);
-              players = [];
-            }
-          } catch (error) {
-            console.error(`❌ Players failed (attempt ${retryCount + 1}):`, error);
-            players = [];
-          }
-          
-          if (players.length === 0 && retryCount < maxRetries - 1) {
-            retryCount++;
-            console.log(`🔄 Retrying players load in 2 seconds... (${retryCount}/${maxRetries})`);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          } else {
-            break;
-          }
-        }
-        
-        // Skip teams and fixtures for now to improve loading speed
-        console.log('⏭️ Skipping teams and fixtures for faster loading')
-
-        setRealData({
-          teams,
-          fixtures,
-          players,
-          loading: false,
-          error: players.length === 0 ? 'Failed to load players after multiple attempts' : null
-        });
-        
-        console.log(`🎉 SportMonks Premium data loaded: ${teams.length} teams, ${fixtures.length} fixtures, ${players.length} players`);
-      } catch (error) {
-        console.error('❌ Critical error loading cricket data:', error);
-        setRealData(prev => ({
-          ...prev,
-          loading: false,
-          error: 'Unable to load cricket data from SportMonks Premium. Please check your connection.'
-        }));
-      }
-    };
-
-    loadRealData();
+    console.log('🎯 Loading dummy cricket data...');
+    // Simulate loading delay
+    setTimeout(() => {
+      console.log('✅ Dummy data ready!');
+    }, 1000);
   }, []);
 
   // Generate role-specific career statistics
@@ -136,14 +51,14 @@ const PlayerDeepDive = () => {
         // Primary bowling stats
         totalWickets: Math.floor(150 + rankingBonus * 50 + Math.random() * 200),
         totalMatches: Math.floor(80 + Math.random() * 120),
-        bowlingAverage: Math.round((20 + Math.random() * 15) * 10) / 10,
-        economyRate: Math.round((3.5 + Math.random() * 2.5) * 10) / 10,
-        strikeRate: Math.round((18 + Math.random() * 12) * 10) / 10, // Bowling SR (balls per wicket)
+        bowlingAverage: Number((20 + Math.random() * 15).toFixed(1)),
+        economyRate: Number((3.5 + Math.random() * 2.5).toFixed(1)),
+        strikeRate: Number((18 + Math.random() * 12).toFixed(1)), // Bowling SR (balls per wicket)
         bestFigures: `${Math.floor(4 + Math.random() * 6)}/${Math.floor(15 + Math.random() * 35)}`,
         fiveWicketHauls: Math.floor(rankingBonus / 3 + Math.random() * 8),
         // Secondary batting stats (many bowlers can bat)
         totalRuns: Math.floor(500 + Math.random() * 1500),
-        battingAverage: Math.round((15 + Math.random() * 20) * 10) / 10,
+        battingAverage: Number((15 + Math.random() * 20).toFixed(1)),
         highestScore: Math.floor(30 + Math.random() * 70)
       };
     } else if (isAllRounder) {
@@ -154,13 +69,13 @@ const PlayerDeepDive = () => {
         totalMatches: Math.floor(80 + Math.random() * 120),
         centuries: Math.floor(rankingBonus / 3 + Math.random() * 6),
         fifties: Math.floor(8 + rankingBonus + Math.random() * 15),
-        average: Math.round((35 + Math.random() * 15) * 10) / 10,
-        strikeRate: Math.round(baseStrikeRate * 10) / 10,
+        average: Number((35 + Math.random() * 15).toFixed(1)),
+        strikeRate: Number(baseStrikeRate.toFixed(1)),
         highestScore: Math.floor(120 + rankingBonus * 3 + Math.random() * 80),
         // Bowling stats
         totalWickets: Math.floor(80 + rankingBonus * 20 + Math.random() * 120),
-        bowlingAverage: Math.round((25 + Math.random() * 15) * 10) / 10,
-        economyRate: Math.round((4.0 + Math.random() * 2.0) * 10) / 10,
+        bowlingAverage: Number((25 + Math.random() * 15).toFixed(1)),
+        economyRate: Number((4.0 + Math.random() * 2.0).toFixed(1)),
         fiveWicketHauls: Math.floor(Math.random() * 4)
       };
     } else if (isWicketKeeper) {
@@ -171,8 +86,8 @@ const PlayerDeepDive = () => {
         totalMatches: Math.floor(70 + Math.random() * 100),
         centuries: Math.floor(rankingBonus / 3 + Math.random() * 7),
         fifties: Math.floor(6 + rankingBonus + Math.random() * 12),
-        average: Math.round(baseAverage * 10) / 10,
-        strikeRate: Math.round(baseStrikeRate * 10) / 10,
+        average: Number(baseAverage.toFixed(1)),
+        strikeRate: Number(baseStrikeRate.toFixed(1)),
         highestScore: Math.floor(80 + rankingBonus * 4 + Math.random() * 100),
         // Wicket-keeping stats
         totalDismissals: Math.floor(200 + rankingBonus * 30 + Math.random() * 250),
@@ -186,8 +101,8 @@ const PlayerDeepDive = () => {
         totalMatches: Math.floor(80 + Math.random() * 120),
         centuries: Math.floor(rankingBonus / 2 + Math.random() * 12),
         fifties: Math.floor(10 + rankingBonus + Math.random() * 20),
-        average: Math.round(baseAverage * 10) / 10,
-        strikeRate: Math.round(baseStrikeRate * 10) / 10,
+        average: Number(baseAverage.toFixed(1)),
+        strikeRate: Number(baseStrikeRate.toFixed(1)),
         highestScore: Math.floor(120 + rankingBonus * 5 + Math.random() * 150)
       };
     }
@@ -407,162 +322,63 @@ const PlayerDeepDive = () => {
 
   // Generate comprehensive player statistics (now with real data!)
   const generatePlayerStats = async (playerName, teamName, playerRole = 'Batsman') => {
-    try {
-      // Try to get real analytics from the new enhanced backend first
-      console.log(`🚀 Attempting to fetch real analytics for ${playerName} (${playerRole})`);
-      const response = await fetch(`http://localhost:5001/players/${encodeURIComponent(playerName)}/analytics?role=${playerRole}`);
-      
-      if (response.ok) {
-        const analyticsData = await response.json();
-        if (analyticsData.success && analyticsData.has_real_data) {
-          console.log(`✅ Got real analytics data for ${playerName}!`, analyticsData.data_sources);
-          
-          // Transform the real analytics to match our UI structure
-          return {
-            playerName,
-            teamName,
-            playerRole,
-            hasRealData: true,
-            dataSources: analyticsData.data_sources,
-            careerStats: generateRoleSpecificStats(playerRole, 42, 135, 0.1), // Keep existing career stats
-            recentForm: generateFallbackMatches(playerName), // Keep existing match display
-            recentFormAnalysis: analyticsData.data.recentFormAnalysis,
-            situationalStats: analyticsData.data.situationalStats,
-            phasePerformance: analyticsData.data.phasePerformance,
-            homeAwayStats: analyticsData.data.homeAwayStats,
-            performanceTrend: generateTrendData(playerName), // Keep existing trend chart
-            formatPerformance: generateFormatData(playerName), // Keep existing format data
-            vsOpponents: generateOpponentData(playerName), // Keep existing opponent data
-            playerSkills: generateRoleSpecificSkills(playerRole, 0.1) // Keep existing skills radar
-          };
-        }
-      }
-    } catch (error) {
-      console.warn(`⚠️ Real analytics failed for ${playerName}, using fallback:`, error);
-    }
+    console.log(`🏏 Generating ${playerRole} stats for ${playerName} from ${teamName}`);
     
-    // Fallback to existing generation logic
-    console.log(`🔄 Using intelligent fallback for ${playerName}`);
-    return generateFallbackPlayerStats(playerName, teamName, playerRole);
+    // Simple team ranking based on name
+    const teamRanking = Math.floor(Math.random() * 10) + 1;
+    const rankingBonus = Math.max(0, 15 - teamRanking);
+
+    // Base stats influenced by team ranking
+    const baseAverage = 25 + rankingBonus * 2 + Math.random() * 20;
+    const baseStrikeRate = 70 + rankingBonus * 3 + Math.random() * 30;
+    
+    // Role-specific career statistics
+    const careerStats = generateRoleSpecificStats(playerRole, baseAverage, baseStrikeRate, rankingBonus);
+
+    // Generate recent form
+    const recentForm = generateFallbackMatches(playerName);
+
+    // Performance trend (last 6 months)
+    const performanceTrend = generateTrendData(playerName);
+
+    // Format-wise performance
+    const formatPerformance = generateFormatData(playerName);
+
+    // Performance vs different opponents
+    const vsOpponents = generateOpponentData(playerName);
+
+    // Role-specific player skills assessment
+    const playerSkills = generateRoleSpecificSkills(playerRole, rankingBonus);
+
+    // Create name hash for consistent analytics
+    const nameHash = playerName.split('').reduce((hash, char) => hash + char.charCodeAt(0), 0);
+    
+    // Advanced Analytics
+    const recentFormAnalysis = analyzeRecentForm(recentForm, playerRole);
+    const situationalStats = generateSituationalStats(playerName, playerRole, nameHash);
+    const phasePerformance = generatePhasePerformance(playerRole, nameHash);
+    const homeAwayStats = generateHomeAwayStats(nameHash, teamName);
+
+    return {
+      playerName,
+      teamName,
+      playerRole,
+      hasRealData: false,
+      dataSources: ['dummy_data'],
+      careerStats,
+      recentForm,
+      recentFormAnalysis,
+      situationalStats,
+      phasePerformance,
+      homeAwayStats,
+      performanceTrend,
+      formatPerformance,
+      vsOpponents,
+      playerSkills
+    };
   };
 
-  // Original comprehensive player statistics generation (now as fallback)
-  const generateFallbackPlayerStats = async (playerName, teamName, playerRole = 'Batsman') => {
-    if (!playerName || !teamName) return null;
 
-    try {
-      console.log(`🏏 Generating ${playerRole} stats for ${playerName} from ${teamName}`);
-      
-      const team = realData.teams.find(t => t.name === teamName) || {};
-      const teamRanking = team?.ranking || 10;
-      const rankingBonus = Math.max(0, 15 - teamRanking);
-
-      // Base stats influenced by team ranking
-      const baseAverage = 25 + rankingBonus * 2 + Math.random() * 20;
-      const baseStrikeRate = 70 + rankingBonus * 3 + Math.random() * 30;
-      
-      // Role-specific career statistics
-      const careerStats = generateRoleSpecificStats(playerRole, baseAverage, baseStrikeRate, rankingBonus);
-
-      // Fetch real match history from SportMonks Premium via backend
-      let recentForm = [];
-      try {
-        console.log(`📡 Fetching real match history for ${playerName}...`);
-        const matchHistoryResponse = await getPlayerMatchHistory(playerName);
-        
-        if (matchHistoryResponse.success && matchHistoryResponse.data) {
-          recentForm = matchHistoryResponse.data;
-          console.log(`✅ Got ${recentForm.length} real matches from SportMonks Premium`);
-        } else {
-          console.warn(`⚠️ No real match data for ${playerName}, using fallback`);
-          recentForm = generateFallbackMatches(playerName);
-        }
-      } catch (error) {
-        console.error(`❌ Failed to fetch real match history for ${playerName}:`, error);
-        recentForm = generateFallbackMatches(playerName);
-      }
-
-      // Performance trend (last 2 years)
-      const performanceTrend = Array.from({ length: 24 }, (_, i) => {
-        const month = new Date();
-        month.setMonth(month.getMonth() - (23 - i));
-        return {
-          month: month.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
-          average: Math.round((baseAverage + (Math.random() - 0.5) * 10) * 10) / 10,
-          strikeRate: Math.round((baseStrikeRate + (Math.random() - 0.5) * 20) * 10) / 10,
-          matches: Math.floor(1 + Math.random() * 4)
-        };
-      });
-
-      // Format-wise performance
-      const formatPerformance = [
-        {
-          format: 'T20I',
-          average: Math.round((baseAverage * 0.8 + Math.random() * 10) * 10) / 10,
-          strikeRate: Math.round((baseStrikeRate * 1.3 + Math.random() * 20) * 10) / 10,
-          matches: Math.floor(20 + Math.random() * 40)
-        },
-        {
-          format: 'ODI',
-          average: Math.round((baseAverage + Math.random() * 15) * 10) / 10,
-          strikeRate: Math.round((baseStrikeRate + Math.random() * 15) * 10) / 10,
-          matches: Math.floor(30 + Math.random() * 60)
-        },
-        {
-          format: 'Test',
-          average: Math.round((baseAverage * 1.2 + Math.random() * 15) * 10) / 10,
-          strikeRate: Math.round((baseStrikeRate * 0.7 + Math.random() * 10) * 10) / 10,
-          matches: Math.floor(15 + Math.random() * 50)
-        }
-      ].map(format => ({
-        ...format,
-        runs: Math.floor(format.average * format.matches) // Calculate total runs from average and matches
-      }));
-
-      // Performance vs different opponents
-      const vsOpponents = [
-        'Australia', 'England', 'Pakistan', 'South Africa', 'New Zealand'
-      ].map(opponent => ({
-        opponent,
-        average: Math.round((baseAverage + (Math.random() - 0.5) * 20) * 10) / 10,
-        strikeRate: Math.round((baseStrikeRate + (Math.random() - 0.5) * 30) * 10) / 10,
-        matches: Math.floor(5 + Math.random() * 15)
-      }));
-
-      // Role-specific player skills assessment
-      const playerSkills = generateRoleSpecificSkills(playerRole, rankingBonus);
-
-              // Create name hash for consistent analytics
-        const nameHash = playerName.split('').reduce((hash, char) => hash + char.charCodeAt(0), 0);
-        
-        // Advanced Analytics
-        const recentFormAnalysis = analyzeRecentForm(recentForm, playerRole);
-        const situationalStats = generateSituationalStats(playerName, playerRole, nameHash);
-        const phasePerformance = generatePhasePerformance(playerRole, nameHash);
-        const homeAwayStats = generateHomeAwayStats(nameHash, teamName);
-
-              return {
-          playerName,
-          teamName,
-          playerRole,
-          hasRealData: false,
-          dataSources: ['intelligent_simulation'],
-          careerStats,
-          recentForm,
-          recentFormAnalysis,
-          situationalStats,
-          phasePerformance,
-          homeAwayStats,
-          performanceTrend,
-          formatPerformance,
-          vsOpponents,
-          playerSkills
-        };
-      } catch (error) {
-        console.error('Error generating fallback player stats:', error);
-        return null;
-      }
-    };
 
     // Utility functions for consistent data generation
     const generateTrendData = (playerName) => {
@@ -570,8 +386,8 @@ const PlayerDeepDive = () => {
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       return months.slice(-6).map((month, index) => ({
         month,
-        average: 35 + (nameHash + index * 3) % 25,
-        strikeRate: 85 + (nameHash + index * 5) % 40
+        average: Number((35 + (nameHash + index * 3) % 25).toFixed(1)),
+        strikeRate: Number((85 + (nameHash + index * 5) % 40).toFixed(1))
       }));
     };
 
@@ -584,8 +400,8 @@ const PlayerDeepDive = () => {
         return {
           format,
           matches,
-          average: average.toFixed(1),
-          strikeRate: (80 + (nameHash + index * 6) % 35).toFixed(1),
+          average: Number(average.toFixed(1)),
+          strikeRate: Number((80 + (nameHash + index * 6) % 35).toFixed(1)),
           runs: Math.floor(average * matches)
         };
       });
@@ -593,11 +409,11 @@ const PlayerDeepDive = () => {
 
     const generateOpponentData = (playerName) => {
       const nameHash = playerName.split('').reduce((hash, char) => hash + char.charCodeAt(0), 0);
-      const opponents = ['Australia', 'England', 'South Africa', 'New Zealand', 'Pakistan'];
+      const opponents = ['Australia', 'England', 'India', 'South Africa', 'New Zealand', 'Pakistan', 'West Indies', 'Sri Lanka', 'Bangladesh', 'Afghanistan'];
       return opponents.map((opponent, index) => ({
-        team: opponent,
+        opponent,
         matches: 8 + (nameHash + index * 3) % 12,
-        average: (30 + (nameHash + index * 5) % 25).toFixed(1),
+        average: Number((30 + (nameHash + index * 5) % 25).toFixed(1)),
         runs: 180 + (nameHash + index * 20) % 300
       }));
     };
@@ -612,15 +428,13 @@ const PlayerDeepDive = () => {
     // Player-specific characteristics based on name hash
     const isAggressive = (nameHash % 3) === 0;  // 33% are aggressive
     const isConsistent = (nameHash % 4) === 0;  // 25% are very consistent
-    const teamStrength = (nameHash % 5) + 6;    // Team strength 6-10
     
     // Base stats influenced by player type
-    const baseAvg = isConsistent ? 35 : (isAggressive ? 25 : 30);
     const baseSR = isAggressive ? 85 : (isConsistent ? 70 : 78);
     
     const matches = [];
-    const opponents = ['Australia', 'England', 'Pakistan', 'South Africa', 'New Zealand', 'West Indies', 'Sri Lanka', 'Bangladesh'];
-    const venues = ['MCG Melbourne', 'Lords London', 'Eden Gardens Kolkata', 'Wankhede Mumbai', 'SCG Sydney', 'The Oval London'];
+    const opponents = ['Australia', 'England', 'India', 'Pakistan', 'South Africa', 'New Zealand', 'West Indies', 'Sri Lanka', 'Bangladesh', 'Afghanistan', 'Ireland', 'Netherlands'];
+    const venues = ['MCG Melbourne', 'Lords London', 'Eden Gardens Kolkata', 'Wankhede Mumbai', 'SCG Sydney', 'The Oval London', 'Gaddafi Stadium Lahore', 'Newlands Cape Town', 'Basin Reserve Wellington', 'Kensington Oval Barbados'];
     const formats = ['ODI', 'T20I', 'Test'];
     
     for (let i = 0; i < 10; i++) {
@@ -640,7 +454,7 @@ const PlayerDeepDive = () => {
       const balls = Math.max(20, Math.floor(runs * (100/baseSR) + (matchSeed % 20) - 10));
       const fours = Math.max(0, Math.floor(runs / 25 + (matchSeed % 6)));
       const sixes = Math.max(0, Math.floor(runs / 40 + (matchSeed % 3)));
-      const strikeRate = balls > 0 ? Math.round((runs / balls) * 100 * 10) / 10 : 0;
+      const strikeRate = balls > 0 ? Number(((runs / balls) * 100).toFixed(1)) : 0;
       
       // Match date (going backwards from today)
       const matchDate = new Date(Date.now() - (i * 10 + (matchSeed % 7)) * 24 * 60 * 60 * 1000);
@@ -679,6 +493,12 @@ const PlayerDeepDive = () => {
   };
 
   const getPrimaryStatValue = (stats, role) => {
+    // Handle real career stats from API
+    if (stats?.batting && stats?.bowling) {
+      if (role === 'Bowler') return stats.bowling.totalWickets || stats.bowling.wickets || 0;
+      return (stats.batting.totalRuns || stats.batting.runs_scored || 0).toLocaleString();
+    }
+    // Handle fallback stats
     if (role === 'Bowler') return stats.totalWickets || 0;
     return (stats.totalRuns || 0).toLocaleString();
   };
@@ -688,6 +508,12 @@ const PlayerDeepDive = () => {
   };
 
   const getSecondaryStatValue = (stats, role) => {
+    // Handle real career stats from API
+    if (stats?.batting && stats?.bowling) {
+      if (role === 'Bowler') return stats.bowling.average || 0;
+      return stats.batting.average || 0;
+    }
+    // Handle fallback stats
     if (role === 'Bowler') return stats.bowlingAverage || 0;
     return stats.average || 0;
   };
@@ -701,6 +527,12 @@ const PlayerDeepDive = () => {
   };
 
   const getPerformanceStatValue = (stats, role) => {
+    // Handle real career stats from API
+    if (stats?.batting && stats?.bowling) {
+      if (role === 'Bowler') return stats.bowling.economy || 0;
+      return stats.batting.strike_rate || 0;
+    }
+    // Handle fallback stats
     if (role === 'Bowler') return stats.economyRate || 0;
     return stats.strikeRate || 0;
   };
@@ -710,6 +542,12 @@ const PlayerDeepDive = () => {
   };
 
   const getPerformanceSecondaryValue = (stats, role) => {
+    // Handle real career stats from API
+    if (stats?.batting && stats?.bowling) {
+      if (role === 'Bowler') return stats.bowling.strike_rate || 0;
+      return stats.batting.highest_score || 0;
+    }
+    // Handle fallback stats
     if (role === 'Bowler') return stats.strikeRate || 0;
     return stats.highestScore || 0;
   };
@@ -746,109 +584,93 @@ const PlayerDeepDive = () => {
   };
 
   // State for all international players from API
-  const [allPlayers, setAllPlayers] = useState([]);
 
 
-  // Load all international cricket players from API
-  useEffect(() => {
-    const loadAllPlayers = async () => {
-      try {
-        console.log('🏏 Fetching all international cricket players from API...');
-        
-        const response = await getPlayers();
-        console.log('🔍 Raw API Response:', response);
-        console.log('🔍 API Response Details:', { 
-          success: response?.success, 
-          dataLength: response?.data?.length, 
-          total: response?.total,
-          hasData: !!response?.data,
-          responseType: typeof response,
-          responseKeys: response ? Object.keys(response) : 'null'
-        });
-        
-        if (response.success && response.data) {
-          console.log('🔍 Processing players data...');
-          const formattedPlayers = response.data.map((player, index) => {
-            try {
-              return {
-                name: player.fullname,
-                fullName: `${player.fullname} (${player.team})`,
-                team: player.team,
-                teamCode: player.team_code,
-                role: player.position?.name || 'Player',
-                ranking: player.ranking || 99,
-                battingStyle: player.battingstyle || 'Right-hand bat',
-                bowlingStyle: player.bowlingstyle || '',
-                searchTerm: `${player.fullname} ${player.team} ${player.team_code} ${player.position?.name || ''}`.toLowerCase(),
-                isInternational: player.is_international || true
-              };
-            } catch (mapError) {
-              console.error(`❌ Error mapping player at index ${index}:`, player, mapError);
-              return null;
-            }
-          }).filter(Boolean);
-          
-          console.log(`✅ Successfully processed ${formattedPlayers.length} international cricket players from API`);
-          setAllPlayers(formattedPlayers);
-        } else {
-          console.error('❌ Invalid API response structure:', { response });
-          console.log('🔄 Using fallback players...');
-          setAllPlayers(getFallbackPlayers());
-        }
-      } catch (error) {
-        console.error('❌ Error fetching players from API:', error);
-        console.log('🔄 Using fallback players...');
-        setAllPlayers(getFallbackPlayers());
-      } finally {
 
-      }
-    };
 
-    loadAllPlayers();
-  }, []);
 
-  // Fallback players if API fails
+  // International players data
   const getFallbackPlayers = () => {
     return [
+      // India
       { name: 'Virat Kohli', fullName: 'Virat Kohli (India)', team: 'India', teamCode: 'IND', role: 'Batsman', ranking: 1, searchTerm: 'virat kohli india ind batsman' },
-      { name: 'Steve Smith', fullName: 'Steve Smith (Australia)', team: 'Australia', teamCode: 'AUS', role: 'Batsman', ranking: 2, searchTerm: 'steve smith australia aus batsman' },
-      { name: 'Joe Root', fullName: 'Joe Root (England)', team: 'England', teamCode: 'ENG', role: 'Batsman', ranking: 3, searchTerm: 'joe root england eng batsman' },
-      { name: 'Kane Williamson', fullName: 'Kane Williamson (New Zealand)', team: 'New Zealand', teamCode: 'NZ', role: 'Batsman', ranking: 4, searchTerm: 'kane williamson new zealand nz batsman' },
-      { name: 'Babar Azam', fullName: 'Babar Azam (Pakistan)', team: 'Pakistan', teamCode: 'PAK', role: 'Batsman', ranking: 5, searchTerm: 'babar azam pakistan pak batsman' }
+      { name: 'Rohit Sharma', fullName: 'Rohit Sharma (India)', team: 'India', teamCode: 'IND', role: 'Batsman', ranking: 2, searchTerm: 'rohit sharma india ind batsman' },
+      { name: 'KL Rahul', fullName: 'KL Rahul (India)', team: 'India', teamCode: 'IND', role: 'Batsman', ranking: 3, searchTerm: 'kl rahul india ind batsman' },
+      { name: 'Jasprit Bumrah', fullName: 'Jasprit Bumrah (India)', team: 'India', teamCode: 'IND', role: 'Bowler', ranking: 4, searchTerm: 'jasprit bumrah india ind bowler' },
+      { name: 'Ravindra Jadeja', fullName: 'Ravindra Jadeja (India)', team: 'India', teamCode: 'IND', role: 'All-rounder', ranking: 5, searchTerm: 'ravindra jadeja india ind all-rounder' },
+      { name: 'Rishabh Pant', fullName: 'Rishabh Pant (India)', team: 'India', teamCode: 'IND', role: 'Wicket-keeper', ranking: 6, searchTerm: 'rishabh pant india ind wicket-keeper' },
+      
+      // Australia
+      { name: 'Steve Smith', fullName: 'Steve Smith (Australia)', team: 'Australia', teamCode: 'AUS', role: 'Batsman', ranking: 7, searchTerm: 'steve smith australia aus batsman' },
+      { name: 'David Warner', fullName: 'David Warner (Australia)', team: 'Australia', teamCode: 'AUS', role: 'Batsman', ranking: 8, searchTerm: 'david warner australia aus batsman' },
+      { name: 'Marnus Labuschagne', fullName: 'Marnus Labuschagne (Australia)', team: 'Australia', teamCode: 'AUS', role: 'Batsman', ranking: 9, searchTerm: 'marnus labuschagne australia aus batsman' },
+      { name: 'Pat Cummins', fullName: 'Pat Cummins (Australia)', team: 'Australia', teamCode: 'AUS', role: 'Bowler', ranking: 10, searchTerm: 'pat cummins australia aus bowler' },
+      { name: 'Mitchell Starc', fullName: 'Mitchell Starc (Australia)', team: 'Australia', teamCode: 'AUS', role: 'Bowler', ranking: 11, searchTerm: 'mitchell starc australia aus bowler' },
+      { name: 'Glenn Maxwell', fullName: 'Glenn Maxwell (Australia)', team: 'Australia', teamCode: 'AUS', role: 'All-rounder', ranking: 12, searchTerm: 'glenn maxwell australia aus all-rounder' },
+      
+      // England
+      { name: 'Joe Root', fullName: 'Joe Root (England)', team: 'England', teamCode: 'ENG', role: 'Batsman', ranking: 13, searchTerm: 'joe root england eng batsman' },
+      { name: 'Ben Stokes', fullName: 'Ben Stokes (England)', team: 'England', teamCode: 'ENG', role: 'All-rounder', ranking: 14, searchTerm: 'ben stokes england eng all-rounder' },
+      { name: 'Jos Buttler', fullName: 'Jos Buttler (England)', team: 'England', teamCode: 'ENG', role: 'Wicket-keeper', ranking: 15, searchTerm: 'jos buttler england eng wicket-keeper' },
+      { name: 'Jonny Bairstow', fullName: 'Jonny Bairstow (England)', team: 'England', teamCode: 'ENG', role: 'Wicket-keeper', ranking: 16, searchTerm: 'jonny bairstow england eng wicket-keeper' },
+      { name: 'James Anderson', fullName: 'James Anderson (England)', team: 'England', teamCode: 'ENG', role: 'Bowler', ranking: 17, searchTerm: 'james anderson england eng bowler' },
+      { name: 'Stuart Broad', fullName: 'Stuart Broad (England)', team: 'England', teamCode: 'ENG', role: 'Bowler', ranking: 18, searchTerm: 'stuart broad england eng bowler' },
+      
+      // Pakistan
+      { name: 'Babar Azam', fullName: 'Babar Azam (Pakistan)', team: 'Pakistan', teamCode: 'PAK', role: 'Batsman', ranking: 19, searchTerm: 'babar azam pakistan pak batsman' },
+      { name: 'Shaheen Afridi', fullName: 'Shaheen Afridi (Pakistan)', team: 'Pakistan', teamCode: 'PAK', role: 'Bowler', ranking: 20, searchTerm: 'shaheen afridi pakistan pak bowler' },
+      { name: 'Mohammad Rizwan', fullName: 'Mohammad Rizwan (Pakistan)', team: 'Pakistan', teamCode: 'PAK', role: 'Wicket-keeper', ranking: 21, searchTerm: 'mohammad rizwan pakistan pak wicket-keeper' },
+      { name: 'Fakhar Zaman', fullName: 'Fakhar Zaman (Pakistan)', team: 'Pakistan', teamCode: 'PAK', role: 'Batsman', ranking: 22, searchTerm: 'fakhar zaman pakistan pak batsman' },
+      { name: 'Haris Rauf', fullName: 'Haris Rauf (Pakistan)', team: 'Pakistan', teamCode: 'PAK', role: 'Bowler', ranking: 23, searchTerm: 'haris rauf pakistan pak bowler' },
+      
+      // New Zealand
+      { name: 'Kane Williamson', fullName: 'Kane Williamson (New Zealand)', team: 'New Zealand', teamCode: 'NZ', role: 'Batsman', ranking: 24, searchTerm: 'kane williamson new zealand nz batsman' },
+      { name: 'Trent Boult', fullName: 'Trent Boult (New Zealand)', team: 'New Zealand', teamCode: 'NZ', role: 'Bowler', ranking: 25, searchTerm: 'trent boult new zealand nz bowler' },
+      { name: 'Tim Southee', fullName: 'Tim Southee (New Zealand)', team: 'New Zealand', teamCode: 'NZ', role: 'Bowler', ranking: 26, searchTerm: 'tim southee new zealand nz bowler' },
+      { name: 'Devon Conway', fullName: 'Devon Conway (New Zealand)', team: 'New Zealand', teamCode: 'NZ', role: 'Batsman', ranking: 27, searchTerm: 'devon conway new zealand nz batsman' },
+      { name: 'Tom Latham', fullName: 'Tom Latham (New Zealand)', team: 'New Zealand', teamCode: 'NZ', role: 'Wicket-keeper', ranking: 28, searchTerm: 'tom latham new zealand nz wicket-keeper' },
+      
+      // South Africa
+      { name: 'Kagiso Rabada', fullName: 'Kagiso Rabada (South Africa)', team: 'South Africa', teamCode: 'SA', role: 'Bowler', ranking: 29, searchTerm: 'kagiso rabada south africa sa bowler' },
+      { name: 'Quinton de Kock', fullName: 'Quinton de Kock (South Africa)', team: 'South Africa', teamCode: 'SA', role: 'Wicket-keeper', ranking: 30, searchTerm: 'quinton de kock south africa sa wicket-keeper' },
+      { name: 'Aiden Markram', fullName: 'Aiden Markram (South Africa)', team: 'South Africa', teamCode: 'SA', role: 'Batsman', ranking: 31, searchTerm: 'aiden markram south africa sa batsman' },
+      { name: 'Keshav Maharaj', fullName: 'Keshav Maharaj (South Africa)', team: 'South Africa', teamCode: 'SA', role: 'Bowler', ranking: 32, searchTerm: 'keshav maharaj south africa sa bowler' },
+      
+      // West Indies
+      { name: 'Shai Hope', fullName: 'Shai Hope (West Indies)', team: 'West Indies', teamCode: 'WI', role: 'Batsman', ranking: 33, searchTerm: 'shai hope west indies wi batsman' },
+      { name: 'Nicholas Pooran', fullName: 'Nicholas Pooran (West Indies)', team: 'West Indies', teamCode: 'WI', role: 'Wicket-keeper', ranking: 34, searchTerm: 'nicholas pooran west indies wi wicket-keeper' },
+      { name: 'Andre Russell', fullName: 'Andre Russell (West Indies)', team: 'West Indies', teamCode: 'WI', role: 'All-rounder', ranking: 35, searchTerm: 'andre russell west indies wi all-rounder' },
+      { name: 'Jason Holder', fullName: 'Jason Holder (West Indies)', team: 'West Indies', teamCode: 'WI', role: 'All-rounder', ranking: 36, searchTerm: 'jason holder west indies wi all-rounder' },
+      
+      // Sri Lanka
+      { name: 'Kusal Mendis', fullName: 'Kusal Mendis (Sri Lanka)', team: 'Sri Lanka', teamCode: 'SL', role: 'Batsman', ranking: 37, searchTerm: 'kusal mendis sri lanka sl batsman' },
+      { name: 'Wanindu Hasaranga', fullName: 'Wanindu Hasaranga (Sri Lanka)', team: 'Sri Lanka', teamCode: 'SL', role: 'All-rounder', ranking: 38, searchTerm: 'wanindu hasaranga sri lanka sl all-rounder' },
+      { name: 'Dushmantha Chameera', fullName: 'Dushmantha Chameera (Sri Lanka)', team: 'Sri Lanka', teamCode: 'SL', role: 'Bowler', ranking: 39, searchTerm: 'dushmantha chameera sri lanka sl bowler' },
+      
+      // Bangladesh
+      { name: 'Shakib Al Hasan', fullName: 'Shakib Al Hasan (Bangladesh)', team: 'Bangladesh', teamCode: 'BAN', role: 'All-rounder', ranking: 40, searchTerm: 'shakib al hasan bangladesh ban all-rounder' },
+      { name: 'Mushfiqur Rahim', fullName: 'Mushfiqur Rahim (Bangladesh)', team: 'Bangladesh', teamCode: 'BAN', role: 'Wicket-keeper', ranking: 41, searchTerm: 'mushfiqur rahim bangladesh ban wicket-keeper' },
+      { name: 'Tamim Iqbal', fullName: 'Tamim Iqbal (Bangladesh)', team: 'Bangladesh', teamCode: 'BAN', role: 'Batsman', ranking: 42, searchTerm: 'tamim iqbal bangladesh ban batsman' },
+      { name: 'Mustafizur Rahman', fullName: 'Mustafizur Rahman (Bangladesh)', team: 'Bangladesh', teamCode: 'BAN', role: 'Bowler', ranking: 43, searchTerm: 'mustafizur rahman bangladesh ban bowler' },
+      
+      // Afghanistan
+      { name: 'Rashid Khan', fullName: 'Rashid Khan (Afghanistan)', team: 'Afghanistan', teamCode: 'AFG', role: 'Bowler', ranking: 44, searchTerm: 'rashid khan afghanistan afg bowler' },
+      { name: 'Mohammad Nabi', fullName: 'Mohammad Nabi (Afghanistan)', team: 'Afghanistan', teamCode: 'AFG', role: 'All-rounder', ranking: 45, searchTerm: 'mohammad nabi afghanistan afg all-rounder' },
+      { name: 'Rahmanullah Gurbaz', fullName: 'Rahmanullah Gurbaz (Afghanistan)', team: 'Afghanistan', teamCode: 'AFG', role: 'Wicket-keeper', ranking: 46, searchTerm: 'rahmanullah gurbaz afghanistan afg wicket-keeper' },
+      
+      // Ireland
+      { name: 'Paul Stirling', fullName: 'Paul Stirling (Ireland)', team: 'Ireland', teamCode: 'IRE', role: 'Batsman', ranking: 47, searchTerm: 'paul stirling ireland ire batsman' },
+      { name: 'Andy Balbirnie', fullName: 'Andy Balbirnie (Ireland)', team: 'Ireland', teamCode: 'IRE', role: 'Batsman', ranking: 48, searchTerm: 'andy balbirnie ireland ire batsman' },
+      
+      // Netherlands
+      { name: 'Max O\'Dowd', fullName: 'Max O\'Dowd (Netherlands)', team: 'Netherlands', teamCode: 'NED', role: 'Batsman', ranking: 49, searchTerm: 'max odowd netherlands ned batsman' },
+      { name: 'Bas de Leede', fullName: 'Bas de Leede (Netherlands)', team: 'Netherlands', teamCode: 'NED', role: 'All-rounder', ranking: 50, searchTerm: 'bas de leede netherlands ned all-rounder' }
     ];
   };
 
-  // Get all SportMonks Premium players
+  // Get all dummy players
   const getAllInternationalPlayers = () => {
-    if (!realData.players || !Array.isArray(realData.players)) {
-      console.warn('⚠️ No players data available:', realData.players);
-      return [];
-    }
-    
-    const processedPlayers = realData.players
-      .filter(player => player && player.fullname) // Filter out invalid players
-      .map(player => ({
-        name: player.fullname,
-        fullName: `${player.fullname} (${player.team || player.country || 'International'})`,
-        team: player.team || player.country || 'International',
-        teamCode: player.team_code || (player.country && player.country.length >= 3 ? player.country.slice(0, 3).toUpperCase() : 'INT'),
-        role: player.position || 'Player',
-        ranking: player.ranking || 99,
-        battingStyle: player.battingstyle || 'Right-hand bat',
-        bowlingStyle: player.bowlingstyle || '',
-        searchTerm: `${player.fullname} ${player.team || ''} ${player.country || ''} ${player.position || ''}`.toLowerCase(),
-        isInternational: player.is_international !== false // Default to true unless explicitly false
-      }));
-    
-    console.log(`📊 Processed ${processedPlayers.length} players from ${realData.players.length} raw players`);
-    
-    // Log some sample players for debugging
-    if (processedPlayers.length > 0) {
-      const samplePlayers = processedPlayers.slice(0, 3);
-      console.log('📋 Sample processed players:', samplePlayers.map(p => `${p.name} (${p.team})`));
-    }
-    
-    return processedPlayers;
+    return getFallbackPlayers();
   };
 
   // Get filtered players based on search
@@ -880,16 +702,7 @@ const PlayerDeepDive = () => {
     }
   };
 
-  if (realData.loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="w-8 h-8 animate-spin text-cricket-green" />
-          <span className="text-lg text-gray-600 dark:text-gray-300">Loading cricket player data...</span>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="space-y-8">
@@ -899,46 +712,14 @@ const PlayerDeepDive = () => {
           <User className="h-12 w-12 text-cricket-green-600" />
         </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          🏏 Player Deep Dive - SportMonks Premium
+          🏏 Player Deep Dive - Cricket Analytics
         </h1>
         <p className="text-lg text-gray-600 dark:text-gray-300">
-          {realData.loading 
-            ? 'Loading SportMonks Premium cricket players...' 
-            : `Comprehensive analysis of ${getAllInternationalPlayers().length} premium cricket players`
-          }
+          Comprehensive analysis of {getAllInternationalPlayers().length} international cricket players
         </p>
       </div>
 
-      {/* Real Data Status */}
-      {realData.error && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-          <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 text-yellow-400 mr-3" />
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
-              {realData.error}
-            </p>
-          </div>
-        </div>
-      )}
 
-      {!realData.error && (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Trophy className="h-5 w-5 text-green-400 mr-3" />
-              <p className="text-sm text-green-700 dark:text-green-300">
-                ✅ Premium cricket data loaded: {getAllInternationalPlayers().length} players from SportMonks Premium API
-              </p>
-            </div>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-            >
-              🔄 Refresh
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Player Selection */}
       <Card title="🔍 Player Selection" subtitle="Search and select any international cricket player for detailed analysis">
@@ -946,22 +727,15 @@ const PlayerDeepDive = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <Search className="inline h-4 w-4 mr-1" />
-                              {realData.loading 
-                  ? 'Loading players...' 
-                  : `Search Player (${getAllInternationalPlayers().length} SportMonks Premium players available)`
-                }
+              Search Player ({getAllInternationalPlayers().length} international players available)
             </label>
             <div className="relative">
               <input
                 type="text"
-                placeholder={realData.loading 
-                  ? "Loading players..." 
-                  : "🔍 Search cricket players... (e.g., Virat, Kohli, India, Batsman)"
-                }
+                placeholder="🔍 Search cricket players... (e.g., Virat, Kohli, India, Batsman)"
                 value={playerSearchTerm}
                 onChange={(e) => setPlayerSearchTerm(e.target.value)}
-                disabled={realData.loading}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-cricket-green-500 focus:border-cricket-green-500 dark:bg-gray-700 dark:text-white disabled:opacity-50"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-cricket-green-500 focus:border-cricket-green-500 dark:bg-gray-700 dark:text-white"
               />
               {playerSearchTerm && (
                 <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
@@ -982,15 +756,9 @@ const PlayerDeepDive = () => {
                       </div>
                     </div>
                   ))}
-                  {getFilteredPlayers().length === 0 && !realData.loading && (
+                  {getFilteredPlayers().length === 0 && (
                     <div className="px-3 py-4 text-center text-gray-500 dark:text-gray-400">
                       No players found. Try searching for "Virat", "Kohli", "India", "Batsman", or "England"
-                    </div>
-                  )}
-                  {realData.loading && (
-                    <div className="px-3 py-4 text-center text-gray-500 dark:text-gray-400">
-                      <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
-                      Loading international cricket players...
                     </div>
                   )}
                 </div>
@@ -1025,27 +793,25 @@ const PlayerDeepDive = () => {
                               <p className="text-sm">Choose from {getAllInternationalPlayers().length} premium players with comprehensive analytics</p>
               
               {/* Popular Players Quick Access */}
-              {!realData.loading && (
-                <div className="mt-6">
-                  <p className="text-sm font-medium mb-3">🌟 Popular Players:</p>
-                                                        <div className="flex flex-wrap justify-center gap-2">
-                    {getAllInternationalPlayers().slice(0, 6).map(player => {
-                        return (
-                          <button
-                            key={player.name}
-                          onClick={() => handlePlayerSelect(player)}
-                          className="px-3 py-1 bg-cricket-green-100 hover:bg-cricket-green-200 dark:bg-cricket-green-900/30 dark:hover:bg-cricket-green-900/50 text-cricket-green-800 dark:text-cricket-green-200 rounded-full text-xs transition-colors"
-                        >
-                          {player.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="mt-3 text-xs text-gray-400">
-                    Or search by role: "Batsman", "Bowler", "All-rounder", "Wicket-keeper"
-                  </div>
+              <div className="mt-6">
+                <p className="text-sm font-medium mb-3">🌟 Popular Players:</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {getAllInternationalPlayers().slice(0, 6).map(player => {
+                    return (
+                      <button
+                        key={player.name}
+                        onClick={() => handlePlayerSelect(player)}
+                        className="px-3 py-1 bg-cricket-green-100 hover:bg-cricket-green-200 dark:bg-cricket-green-900/30 dark:hover:bg-cricket-green-900/50 text-cricket-green-800 dark:text-cricket-green-200 rounded-full text-xs transition-colors"
+                      >
+                        {player.name}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
+                <div className="mt-3 text-xs text-gray-400">
+                  Or search by role: "Batsman", "Bowler", "All-rounder", "Wicket-keeper"
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -1066,38 +832,7 @@ const PlayerDeepDive = () => {
       {/* Player Analysis Dashboard */}
       {!loadingPlayerStats && playerAnalysisData && playerAnalysisData.careerStats && (
         <>
-          {/* Data Source Indicator */}
-          <div className="mb-6 p-4 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className={`text-2xl ${playerAnalysisData.hasRealData ? 'animate-pulse' : ''}`}>
-                  {playerAnalysisData.hasRealData ? '🌐' : '🧠'}
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-800 dark:text-gray-200">
-                    {playerAnalysisData.hasRealData ? 'Real Cricket Data' : 'Intelligent Simulation'}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {playerAnalysisData.hasRealData 
-                      ? `Live data from: ${playerAnalysisData.dataSources?.join(', ') || 'cricket APIs'}`
-                      : 'Cricket-intelligent fallback with consistent player-specific data'
-                    }
-                  </div>
-                </div>
-              </div>
-              {playerAnalysisData.hasRealData && (
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium text-green-700 dark:text-green-400">LIVE</span>
-                </div>
-              )}
-              {!playerAnalysisData.hasRealData && (
-                <div className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-3 py-1 rounded-full">
-                  Get SportMonks API key for real data
-                </div>
-              )}
-            </div>
-          </div>
+
 
           {/* Role-Specific Career Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1152,6 +887,23 @@ const PlayerDeepDive = () => {
               </div>
             </Card>
 
+            <Card title="Career Matches" className="text-center bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-700/50">
+              <div className="space-y-4">
+                <div>
+                  <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+                    {playerAnalysisData.careerStats?.batting?.matches || 0}
+                  </div>
+                  <div className="text-sm font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wide">Total Matches</div>
+                </div>
+                <div className="pt-3 border-t border-purple-200 dark:border-purple-700/50">
+                  <div className="text-xl font-semibold text-purple-800 dark:text-purple-200">
+                    {playerAnalysisData.careerStats?.batting?.innings || 0}
+                  </div>
+                  <div className="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">Innings</div>
+                </div>
+              </div>
+            </Card>
+
             <Card title="Experience" className="text-center bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-700/50">
               <div className="space-y-4">
                 <div>
@@ -1169,6 +921,111 @@ const PlayerDeepDive = () => {
               </div>
             </Card>
           </div>
+
+          {/* Real API Data Dashboard */}
+          {playerAnalysisData.hasRealData && (
+            <Card title="🌐 Real Career Statistics Dashboard" subtitle="Comprehensive data from SportMonks Premium API" className="mb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Batting Statistics */}
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+                    <Target className="h-6 w-6 mr-2 text-cricket-green" />
+                    Batting Career
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700/50">
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {playerAnalysisData.careerStats?.batting?.runs_scored ? 
+                          Number(playerAnalysisData.careerStats.batting.runs_scored).toLocaleString() : 
+                          playerAnalysisData.careerStats?.batting?.totalRuns ? 
+                          Number(playerAnalysisData.careerStats.batting.totalRuns).toLocaleString() : '0'}
+                      </div>
+                      <div className="text-sm text-blue-700 dark:text-blue-300">Total Runs</div>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-700/50">
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        {playerAnalysisData.careerStats?.batting?.average ? 
+                          Number(playerAnalysisData.careerStats.batting.average).toFixed(1) : '0.0'}
+                      </div>
+                      <div className="text-sm text-green-700 dark:text-green-300">Batting Average</div>
+                    </div>
+                    <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-700/50">
+                      <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                        {playerAnalysisData.careerStats?.batting?.strike_rate ? 
+                          Number(playerAnalysisData.careerStats.batting.strike_rate).toFixed(1) : '0.0'}
+                      </div>
+                      <div className="text-sm text-purple-700 dark:text-purple-300">Strike Rate</div>
+                    </div>
+                    <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-700/50">
+                      <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                        {playerAnalysisData.careerStats?.batting?.highest_score ? 
+                          Number(playerAnalysisData.careerStats.batting.highest_score).toLocaleString() : '0'}
+                      </div>
+                      <div className="text-sm text-orange-700 dark:text-orange-300">Highest Score</div>
+                    </div>
+                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-700/50">
+                      <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                        {playerAnalysisData.careerStats?.batting?.fours ? 
+                          Number(playerAnalysisData.careerStats.batting.fours).toLocaleString() : '0'}
+                      </div>
+                      <div className="text-sm text-red-700 dark:text-red-300">Fours</div>
+                    </div>
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-700/50">
+                      <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                        {playerAnalysisData.careerStats?.batting?.sixes ? 
+                          Number(playerAnalysisData.careerStats.batting.sixes).toLocaleString() : '0'}
+                      </div>
+                      <div className="text-sm text-yellow-700 dark:text-yellow-300">Sixes</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bowling Statistics */}
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+                    <Target className="h-6 w-6 mr-2 text-cricket-green" />
+                    Bowling Career
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700/50">
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {playerAnalysisData.careerStats?.bowling?.wickets ? 
+                          Number(playerAnalysisData.careerStats.bowling.wickets).toLocaleString() : 
+                          playerAnalysisData.careerStats?.bowling?.totalWickets ? 
+                          Number(playerAnalysisData.careerStats.bowling.totalWickets).toLocaleString() : '0'}
+                      </div>
+                      <div className="text-sm text-blue-700 dark:text-blue-300">Total Wickets</div>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-700/50">
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        {playerAnalysisData.careerStats?.bowling?.average ? 
+                          Number(playerAnalysisData.careerStats.bowling.average).toFixed(1) : '0.0'}
+                      </div>
+                      <div className="text-sm text-green-700 dark:text-green-300">Bowling Average</div>
+                    </div>
+                    <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-700/50">
+                      <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                        {playerAnalysisData.careerStats?.bowling?.economy ? 
+                          Number(playerAnalysisData.careerStats.bowling.economy).toFixed(1) : 
+                          playerAnalysisData.careerStats?.bowling?.economyRate ? 
+                          Number(playerAnalysisData.careerStats.bowling.economyRate).toFixed(1) : '0.0'}
+                      </div>
+                      <div className="text-sm text-purple-700 dark:text-purple-300">Economy Rate</div>
+                    </div>
+                    <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-700/50">
+                      <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                        {playerAnalysisData.careerStats?.bowling?.matches ? 
+                          Number(playerAnalysisData.careerStats.bowling.matches).toLocaleString() : 
+                          playerAnalysisData.careerStats?.bowling?.totalMatches ? 
+                          Number(playerAnalysisData.careerStats.bowling.totalMatches).toLocaleString() : '0'}
+                      </div>
+                      <div className="text-sm text-orange-700 dark:text-orange-300">Bowling Matches</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
 
           {/* Recent Form Analysis */}
           {playerAnalysisData.recentFormAnalysis && (
@@ -1326,7 +1183,7 @@ const PlayerDeepDive = () => {
           <Card title="⏱️ Phase-wise Performance" subtitle="Breakdown by match phases" className="mb-6">
             <ResponsiveContainer width="100%" height={280}>
               <BarChart 
-                data={playerAnalysisData.phasePerformance}
+                data={playerAnalysisData.phasePerformance || []}
                 margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                 barCategoryGap="25%"
               >
@@ -1441,7 +1298,7 @@ const PlayerDeepDive = () => {
           >
             <ResponsiveContainer width="100%" height={340}>
               <LineChart 
-                data={playerAnalysisData.performanceTrend}
+                data={playerAnalysisData.performanceTrend || []}
                 margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
               >
                 <defs>
@@ -1526,68 +1383,106 @@ const PlayerDeepDive = () => {
           {/* Format Performance and Recent Form */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Format Performance */}
-            <Card title="Format Performance" subtitle="Across international cricket formats">
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart 
-                  data={playerAnalysisData.formatPerformance}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                  barCategoryGap="20%"
-                >
-                  <defs>
-                    <linearGradient id="averageBarGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9}/>
-                      <stop offset="95%" stopColor="#007AFF" stopOpacity={0.6}/>
-                    </linearGradient>
-                    <linearGradient id="strikeRateBarGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#34C759" stopOpacity={0.9}/>
-                      <stop offset="95%" stopColor="#34C759" stopOpacity={0.6}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid 
-                    strokeDasharray="2 2" 
-                    stroke="#F2F2F7" 
-                    strokeOpacity={0.5}
-                    horizontal={true}
-                    vertical={false}
-                  />
-                  <XAxis 
-                    dataKey="format" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#8E8E93' }}
-                    dy={10}
-                  />
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#8E8E93' }}
-                    dx={-10}
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      backdropFilter: 'blur(10px)',
-                      border: 'none',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-                      fontSize: '14px'
-                    }}
-                    labelStyle={{ color: '#1D1D1F', fontWeight: '600' }}
-                  />
-                  <Bar 
-                    dataKey="average" 
-                    fill="url(#averageBarGradient)" 
-                    name="Average"
-                    radius={[4, 4, 0, 0]}
-                  />
-                  <Bar 
-                    dataKey="strikeRate" 
-                    fill="url(#strikeRateBarGradient)" 
-                    name="Strike Rate"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+            <Card title="🌐 Real Format Performance" subtitle="Performance across formats from SportMonks Premium API">
+              {playerAnalysisData.hasRealData && playerAnalysisData.careerStats?.formats ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Object.entries(playerAnalysisData.careerStats.formats).map(([format, data]) => (
+                      <div key={format} className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700/50">
+                        <div className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-3">{format}</div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-blue-700 dark:text-blue-300">Matches:</span>
+                            <span className="font-medium text-blue-800 dark:text-blue-200">{data.batting?.matches || 0}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-blue-700 dark:text-blue-300">Runs:</span>
+                            <span className="font-medium text-blue-800 dark:text-blue-200">{data.batting?.runs?.toLocaleString() || 0}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-blue-700 dark:text-blue-300">Average:</span>
+                            <span className="font-medium text-blue-800 dark:text-blue-200">{data.batting?.average?.toFixed(2) || '0.00'}</span>
+                          </div>
+                          {data.bowling?.wickets > 0 && (
+                            <>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-green-700 dark:text-green-300">Wickets:</span>
+                                <span className="font-medium text-green-800 dark:text-green-200">{data.bowling?.wickets || 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-green-700 dark:text-green-300">Bowling Avg:</span>
+                                <span className="font-medium text-green-800 dark:text-green-200">{data.bowling?.average?.toFixed(2) || '0.00'}</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart 
+                    data={playerAnalysisData.formatPerformance || []}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                    barCategoryGap="20%"
+                  >
+                    <defs>
+                      <linearGradient id="averageBarGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#007AFF" stopOpacity={0.6}/>
+                      </linearGradient>
+                      <linearGradient id="strikeRateBarGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#34C759" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#34C759" stopOpacity={0.6}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid 
+                      strokeDasharray="2 2" 
+                      stroke="#F2F2F7" 
+                      strokeOpacity={0.5}
+                      horizontal={true}
+                      vertical={false}
+                    />
+                    <XAxis 
+                      dataKey="format" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: '#8E8E93' }}
+                      dy={10}
+                    />
+                    <YAxis 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: '#8E8E93' }}
+                      dx={-10}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        backdropFilter: 'blur(10px)',
+                        border: 'none',
+                        borderRadius: '12px',
+                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                        fontSize: '14px'
+                      }}
+                      labelStyle={{ color: '#1D1D1F', fontWeight: '600' }}
+                    />
+                    <Bar 
+                      dataKey="average" 
+                      fill="url(#averageBarGradient)" 
+                      name="Average"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar 
+                      dataKey="strikeRate" 
+                      fill="url(#strikeRateBarGradient)" 
+                      name="Strike Rate"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </Card>
           </div>
 
@@ -1630,7 +1525,7 @@ const PlayerDeepDive = () => {
                   <h4 className="text-sm font-semibold mb-4 text-gray-800 dark:text-gray-200">Runs Progression</h4>
                   <ResponsiveContainer width="100%" height={220}>
                     <LineChart 
-                      data={playerAnalysisData.recentForm}
+                      data={playerAnalysisData.recentForm || []}
                       margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
                     >
                       <defs>
@@ -1689,7 +1584,7 @@ const PlayerDeepDive = () => {
                   <h4 className="text-sm font-semibold mb-4 text-gray-800 dark:text-gray-200">Strike Rate Trend</h4>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart 
-                      data={playerAnalysisData.recentForm}
+                      data={playerAnalysisData.recentForm || []}
                       margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
                     >
                       <defs>
@@ -1846,7 +1741,7 @@ const PlayerDeepDive = () => {
             <Card title={`${playerAnalysisData.playerRole} Skills`} subtitle={`Performance assessment across key areas`}>
               <ResponsiveContainer width="100%" height={320}>
                 <RadarChart 
-                  data={playerAnalysisData.playerSkills}
+                  data={playerAnalysisData.playerSkills || []}
                   margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                 >
                   <defs>
@@ -1900,7 +1795,7 @@ const PlayerDeepDive = () => {
             <Card title="vs Top Opponents" subtitle="Performance against leading nations">
               <ResponsiveContainer width="100%" height={320}>
                 <BarChart 
-                  data={playerAnalysisData.vsOpponents} 
+                  data={playerAnalysisData.vsOpponents || []} 
                   layout="horizontal"
                   margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                 >

@@ -5,7 +5,6 @@ import {
   Sun, 
   Moon, 
   Target, 
-  BarChart3, 
   Activity,
   User
 } from 'lucide-react';
@@ -20,12 +19,6 @@ const Layout = ({ children }) => {
       label: 'Match Predictor',
       icon: Target,
       description: 'Predict match outcomes'
-    },
-    {
-      path: '/insights',
-      label: 'Cricket Insights',
-      icon: BarChart3,
-      description: 'Explore cricket analytics'
     },
     {
       path: '/player-analysis',

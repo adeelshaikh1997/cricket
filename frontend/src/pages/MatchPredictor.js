@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Target, TrendingUp, Users, MapPin, Calendar, Loader2, AlertCircle } from 'lucide-react';
 import Card from '../components/common/Card';
-import { predictMatch, getTeams, getVenues } from '../services/api';
+
 
 const MatchPredictor = () => {
   const [formData, setFormData] = useState({
@@ -17,61 +17,53 @@ const MatchPredictor = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // Real data state
-  const [realData, setRealData] = useState({
+  // Dummy data state
+  const [realData] = useState({
     teams: [],
     venues: [],
-    loading: true,
+    loading: false,
     error: null
   });
 
-  // Load real cricket data
+  // Load dummy cricket data
   useEffect(() => {
-    const loadRealData = async () => {
-      try {
-        setRealData(prev => ({ ...prev, loading: true, error: null }));
-        
-        const [teamsResponse, venuesResponse] = await Promise.all([
-          getTeams(),
-          getVenues()
-        ]);
-
-        setRealData({
-          teams: teamsResponse.data || [],
-          venues: venuesResponse.data || [],
-          loading: false,
-          error: null
-        });
-      } catch (error) {
-        console.error('Error loading cricket data:', error);
-        setRealData(prev => ({
-          ...prev,
-          loading: false,
-          error: 'Unable to load cricket data from SportMonks Premium. Please check your connection.'
-        }));
-      }
-    };
-
-    loadRealData();
+    console.log('🎯 Loading dummy cricket prediction data...');
   }, []);
 
-  // No mock venues - only use real API data
-
-  // Get available teams from SportMonks Premium API only
-  const availableTeams = realData.teams;
+  // International teams data
+  const availableTeams = [
+    { name: 'India', ranking: 1, code: 'IND' },
+    { name: 'Australia', ranking: 2, code: 'AUS' },
+    { name: 'England', ranking: 3, code: 'ENG' },
+    { name: 'South Africa', ranking: 4, code: 'SA' },
+    { name: 'New Zealand', ranking: 5, code: 'NZ' },
+    { name: 'Pakistan', ranking: 6, code: 'PAK' },
+    { name: 'West Indies', ranking: 7, code: 'WI' },
+    { name: 'Sri Lanka', ranking: 8, code: 'SL' },
+    { name: 'Bangladesh', ranking: 9, code: 'BAN' },
+    { name: 'Afghanistan', ranking: 10, code: 'AFG' },
+    { name: 'Ireland', ranking: 11, code: 'IRE' },
+    { name: 'Netherlands', ranking: 12, code: 'NED' }
+  ];
 
   // Sort teams by ranking for better UX
-  const sortedTeams = availableTeams.sort((a, b) => {
-    const rankingA = a.ranking || 99;
-    const rankingB = b.ranking || 99;
-    return rankingA - rankingB;
-  });
+  const sortedTeams = availableTeams.sort((a, b) => a.ranking - b.ranking);
 
-  // Group teams by status
-  const internationalTeams = sortedTeams.filter(team => team.national_team !== false && (team.ranking || 99) <= 14);
-  const liveDataTeams = sortedTeams.filter(team => team.has_real_data && !internationalTeams.includes(team));
+  // All teams are international
+  const internationalTeams = sortedTeams;
 
-  const availableVenues = realData.venues;
+  const availableVenues = [
+    'Lord\'s, London',
+    'MCG, Melbourne',
+    'Eden Gardens, Kolkata',
+    'Wankhede Stadium, Mumbai',
+    'The Oval, London',
+    'Gaddafi Stadium, Lahore',
+    'Newlands, Cape Town',
+    'Basin Reserve, Wellington',
+    'Kensington Oval, Barbados',
+    'R. Premadasa Stadium, Colombo'
+  ];
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -100,28 +92,79 @@ const MatchPredictor = () => {
 
     setLoading(true);
     setError(null);
+    setPrediction(null);
 
     try {
-      const result = await predictMatch(formData);
-      setPrediction(result);
-    } catch (err) {
-      setError('Failed to get prediction. Please try again.');
-      console.error('Prediction error:', err);
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Generate dummy prediction based on team rankings
+      const teamA = internationalTeams.find(t => t.name === formData.teamA);
+      const teamB = internationalTeams.find(t => t.name === formData.teamB);
+      
+      if (!teamA || !teamB) {
+        setError('Invalid team selection');
+        return;
+      }
+
+      // Calculate win probability based on rankings
+      const rankingDiff = teamB.ranking - teamA.ranking;
+      const baseProbA = 50 + (rankingDiff * 3);
+      const probA = Math.max(20, Math.min(80, baseProbA));
+      const probB = 100 - probA;
+
+      // Determine winner
+      const winner = probA > probB ? teamA.name : teamB.name;
+      const winnerProbability = probA > probB ? probA : probB;
+      const loser = probA > probB ? teamB.name : teamA.name;
+      const loserProbability = probA > probB ? probB : probA;
+
+      const prediction = {
+        winner: winner,
+        probability: winnerProbability,
+        loser: loser,
+        loserProbability: loserProbability,
+        confidence: Math.round(75 + Math.random() * 20),
+        model_version: 'v2.1',
+        prediction_time: new Date().toISOString(),
+        factors: [
+          {
+            name: 'Team Ranking',
+            impact: Math.abs(rankingDiff) * 5
+          },
+          {
+            name: 'Toss Advantage',
+            impact: formData.tossWinner === winner ? 15 : 0
+          },
+          {
+            name: 'Home Advantage',
+            impact: (formData.venue.includes('India') && winner === 'India') ||
+                   (formData.venue.includes('Australia') && winner === 'Australia') ||
+                   (formData.venue.includes('England') && winner === 'England') ? 10 : 0
+          },
+          {
+            name: 'Format Experience',
+            impact: 20
+          }
+        ].filter(factor => factor.impact > 0),
+        matchDetails: {
+          venue: formData.venue,
+          format: formData.matchType.toUpperCase(),
+          tossWinner: formData.tossWinner,
+          tossDecision: formData.tossDecision
+        }
+      };
+
+      setPrediction(prediction);
+    } catch (error) {
+      console.error('Prediction error:', error);
+      setError('Failed to generate prediction. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (realData.loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="w-8 h-8 animate-spin text-cricket-green" />
-          <span className="text-lg text-gray-600 dark:text-gray-300">Loading SportMonks Premium cricket data...</span>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="space-y-8">
@@ -134,32 +177,11 @@ const MatchPredictor = () => {
           Match Outcome Predictor
         </h1>
         <p className="text-lg text-gray-600 dark:text-gray-300">
-          Predict cricket match outcomes using {availableTeams.length} real teams and advanced ML models
+          Predict cricket match outcomes using 12 international teams and advanced analytics
         </p>
       </div>
 
-      {/* Real Data Status */}
-      {realData.error && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-          <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 text-yellow-400 mr-3" />
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
-              {realData.error}
-            </p>
-          </div>
-        </div>
-      )}
 
-      {!realData.error && (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-          <div className="flex items-center">
-            <Trophy className="h-5 w-5 text-green-400 mr-3" />
-            <p className="text-sm text-green-700 dark:text-green-300">
-              ✅ Premium cricket data loaded: {availableTeams.length} teams, {availableVenues.length} venues from SportMonks Premium API
-            </p>
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Prediction Form */}
@@ -181,20 +203,11 @@ const MatchPredictor = () => {
                   <option value="">Select Team A</option>
                   <optgroup label="🏏 International Cricket Teams">
                     {internationalTeams.map(team => (
-                      <option key={team.id} value={team.name}>
-                        {team.ranking}. {team.name} ({team.code}) {team.has_real_data ? '🔴' : ''}
+                      <option key={team.code} value={team.name}>
+                        {team.ranking}. {team.name} ({team.code})
                       </option>
                     ))}
                   </optgroup>
-                  {liveDataTeams.length > 0 && (
-                    <optgroup label="🔴 Live Tournament Teams">
-                      {liveDataTeams.map(team => (
-                        <option key={team.id} value={team.name}>
-                          {team.name} ({team.code}) 🔴
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
                 </select>
               </div>
 
@@ -217,15 +230,7 @@ const MatchPredictor = () => {
                       </option>
                     ))}
                   </optgroup>
-                  {liveDataTeams.length > 0 && (
-                    <optgroup label="🔴 Live Tournament Teams">
-                      {liveDataTeams.filter(team => team.name !== formData.teamA).map(team => (
-                        <option key={team.id} value={team.name}>
-                          {team.name} ({team.code}) 🔴
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
+
                 </select>
               </div>
             </div>
@@ -244,8 +249,8 @@ const MatchPredictor = () => {
               >
                 <option value="">Select Venue</option>
                 {availableVenues.map(venue => (
-                  <option key={venue.id} value={venue.name}>
-                    {venue.name}
+                  <option key={venue} value={venue}>
+                    {venue}
                   </option>
                 ))}
               </select>
@@ -348,17 +353,48 @@ const MatchPredictor = () => {
                 <div className="bg-cricket-green-50 dark:bg-cricket-green-900/20 rounded-lg p-6">
                   <Trophy className="h-12 w-12 text-cricket-green-600 mx-auto mb-4" />
                   <h3 className="text-2xl font-bold text-cricket-green-800 dark:text-cricket-green-300 mb-2">
-                    Predicted Winner
+                    🏆 Predicted Winner
                   </h3>
                   <p className="text-3xl font-bold text-cricket-green-900 dark:text-cricket-green-100">
                     {prediction.winner}
                   </p>
                   <p className="text-lg text-cricket-green-700 dark:text-cricket-green-400 mt-2">
-                    {prediction.probability}% probability
+                    {prediction.probability}% win probability
                   </p>
                   <p className="text-sm text-cricket-green-600 dark:text-cricket-green-500">
-                    Confidence: {prediction.confidence}
+                    Confidence: {prediction.confidence}%
                   </p>
+                </div>
+              </div>
+
+              {/* Team Comparison */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 text-center">
+                  Win Probability Comparison
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className={`text-lg font-semibold ${prediction.winner === formData.teamA ? 'text-cricket-green-600' : 'text-gray-600 dark:text-gray-400'}`}>
+                      {formData.teamA}
+                    </div>
+                    <div className={`text-2xl font-bold ${prediction.winner === formData.teamA ? 'text-cricket-green-700' : 'text-gray-500'}`}>
+                      {prediction.winner === formData.teamA ? prediction.probability : prediction.loserProbability}%
+                    </div>
+                    {prediction.winner === formData.teamA && (
+                      <div className="text-xs text-cricket-green-600 mt-1">🏆 WINNER</div>
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-lg font-semibold ${prediction.winner === formData.teamB ? 'text-cricket-green-600' : 'text-gray-600 dark:text-gray-400'}`}>
+                      {formData.teamB}
+                    </div>
+                    <div className={`text-2xl font-bold ${prediction.winner === formData.teamB ? 'text-cricket-green-700' : 'text-gray-500'}`}>
+                      {prediction.winner === formData.teamB ? prediction.probability : prediction.loserProbability}%
+                    </div>
+                    {prediction.winner === formData.teamB && (
+                      <div className="text-xs text-cricket-green-600 mt-1">🏆 WINNER</div>
+                    )}
+                  </div>
                 </div>
               </div>
 

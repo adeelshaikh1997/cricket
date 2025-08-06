@@ -13,14 +13,7 @@ import {
   Line,
   PieChart,
   Pie,
-  Cell,
-  AreaChart,
-  Area,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar
+  Cell
 } from 'recharts';
 import { 
   BarChart3, 
@@ -29,11 +22,9 @@ import {
   Calendar,
   Filter,
   Trophy,
-  Target,
-  Loader2,
-  AlertCircle
+  Target
 } from 'lucide-react';
-import { getTeams, getFixtures } from '../services/api';
+
 
 const CricketInsights = () => {
   const [selectedFilter, setSelectedFilter] = useState('teams');
@@ -41,56 +32,37 @@ const CricketInsights = () => {
   const [selectedFormat, setSelectedFormat] = useState('all');
   const [dateRange, setDateRange] = useState('last6months');
 
-  // Real data state
-  const [realData, setRealData] = useState({
+  // Dummy data state
+  const [realData] = useState({
     teams: [],
     fixtures: [],
-    loading: true,
+    loading: false,
     error: null
   });
 
-  // Load real cricket data
+  // Load dummy cricket data
   useEffect(() => {
-    const loadRealData = async () => {
-      try {
-        setRealData(prev => ({ ...prev, loading: true, error: null }));
-        
-        const [teamsResponse, fixturesResponse] = await Promise.all([
-          getTeams(),
-          getFixtures()
-        ]);
-
-        setRealData({
-          teams: teamsResponse.data || [],
-          fixtures: fixturesResponse.data || [],
-          loading: false,
-          error: null
-        });
-      } catch (error) {
-        console.error('Error loading cricket data:', error);
-        setRealData(prev => ({
-          ...prev,
-          loading: false,
-          error: 'Unable to load cricket data from SportMonks Premium. Please check your connection.'
-        }));
-      }
-    };
-
-    loadRealData();
+    console.log('🎯 Loading dummy cricket insights data...');
   }, []);
 
 
 
   // Generate insights from real data
   const generateTeamInsights = () => {
-    if (realData.loading || realData.teams.length === 0) {
-      return [];
-    }
-
-    // Filter for international teams and sort by ranking
-    const internationalTeams = realData.teams
-      .filter(team => team.national_team !== false && (team.ranking || 99) <= 14)
-      .sort((a, b) => (a.ranking || 99) - (b.ranking || 99));
+    const internationalTeams = [
+      { name: 'India', ranking: 1, code: 'IND' },
+      { name: 'Australia', ranking: 2, code: 'AUS' },
+      { name: 'England', ranking: 3, code: 'ENG' },
+      { name: 'South Africa', ranking: 4, code: 'SA' },
+      { name: 'New Zealand', ranking: 5, code: 'NZ' },
+      { name: 'Pakistan', ranking: 6, code: 'PAK' },
+      { name: 'West Indies', ranking: 7, code: 'WI' },
+      { name: 'Sri Lanka', ranking: 8, code: 'SL' },
+      { name: 'Bangladesh', ranking: 9, code: 'BAN' },
+      { name: 'Afghanistan', ranking: 10, code: 'AFG' },
+      { name: 'Ireland', ranking: 11, code: 'IRE' },
+      { name: 'Netherlands', ranking: 12, code: 'NED' }
+    ];
 
     return internationalTeams.slice(0, 8).map((team, index) => {
       // Give higher win rates to better ranked teams
@@ -104,99 +76,53 @@ const CricketInsights = () => {
         total: totalMatches,
         winRate: Math.round((wins / totalMatches) * 100),
         ranking: team.ranking,
-        hasLiveData: team.has_real_data || false,
-        region: team.region || 'International'
+        hasLiveData: false,
+        region: 'International'
       };
     });
   };
 
   const generatePlayerInsights = () => {
-    if (realData.loading || realData.teams.length === 0) {
-      return [];
-    }
+    const topTeams = [
+      { name: 'India', ranking: 1, code: 'IND' },
+      { name: 'Australia', ranking: 2, code: 'AUS' },
+      { name: 'England', ranking: 3, code: 'ENG' },
+      { name: 'South Africa', ranking: 4, code: 'SA' },
+      { name: 'New Zealand', ranking: 5, code: 'NZ' }
+    ];
 
-    // Generate player data based on top international teams
-    const players = [];
-    const topTeams = realData.teams
-      .filter(team => team.national_team !== false && (team.ranking || 99) <= 8)
-      .sort((a, b) => (a.ranking || 99) - (b.ranking || 99));
-
-    topTeams.slice(0, 5).forEach(team => {
-      const teamCode = team.code || team.name.substring(0, 3).toUpperCase();
-      // Give better stats to better ranked teams
-      const rankingBonus = Math.max(0, 11 - (team.ranking || 5));
-      players.push({
-        player: `${teamCode} Captain`,
+    return topTeams.map(team => {
+      const rankingBonus = Math.max(0, 11 - team.ranking);
+      return {
+        player: `${team.code} Captain`,
         runs: 1000 + Math.floor(Math.random() * 800) + (rankingBonus * 50),
         average: 35 + Math.random() * 25 + rankingBonus,
         strikeRate: 75 + Math.random() * 25 + rankingBonus,
         team: team.name,
-        hasLiveData: team.has_real_data || false
-      });
+        hasLiveData: false
+      };
     });
-
-    return players;
   };
 
   const generateVenueStats = () => {
-    if (realData.fixtures.length === 0) {
-      return [
-        { name: 'Lord\'s', batFirst: 65, bowlFirst: 35 },
-        { name: 'MCG', batFirst: 58, bowlFirst: 42 },
-        { name: 'Eden Gardens', batFirst: 72, bowlFirst: 28 },
-        { name: 'The Oval', batFirst: 62, bowlFirst: 38 },
-        { name: 'Wankhede', batFirst: 68, bowlFirst: 32 },
-      ];
-    }
-
-    // Extract unique venues from real fixtures
-    const venueMap = new Map();
-    realData.fixtures.forEach(fixture => {
-      if (fixture.venue) {
-        const venueName = fixture.venue.length > 15 ? 
-          fixture.venue.substring(0, 15) + '...' : 
-          fixture.venue;
-        
-        if (!venueMap.has(venueName)) {
-          const batFirst = 45 + Math.floor(Math.random() * 30);
-          venueMap.set(venueName, {
-            name: venueName,
-            batFirst: batFirst,
-            bowlFirst: 100 - batFirst
-          });
-        }
-      }
-    });
-
-    return Array.from(venueMap.values()).slice(0, 6);
+    return [
+      { name: 'Lord\'s', batFirst: 65, bowlFirst: 35 },
+      { name: 'MCG', batFirst: 58, bowlFirst: 42 },
+      { name: 'Eden Gardens', batFirst: 72, bowlFirst: 28 },
+      { name: 'The Oval', batFirst: 62, bowlFirst: 38 },
+      { name: 'Wankhede', batFirst: 68, bowlFirst: 32 },
+      { name: 'Gaddafi Stadium', batFirst: 55, bowlFirst: 45 },
+      { name: 'Newlands', batFirst: 60, bowlFirst: 40 },
+      { name: 'Basin Reserve', batFirst: 52, bowlFirst: 48 }
+    ];
   };
 
   const generateFormatDistribution = () => {
-    if (realData.loading || realData.fixtures.length === 0) {
-      return [
-        { name: 'T20I', value: 45, color: '#22c55e' },
-        { name: 'ODI', value: 35, color: '#3b82f6' },
-        { name: 'Test', value: 20, color: '#f59e0b' },
-      ];
-    }
-
-    const formatCounts = realData.fixtures.reduce((acc, fixture) => {
-      let format = fixture.type ? fixture.type.toUpperCase() : 'Other';
-      // Standardize format names for international cricket
-      if (format === 'T20') format = 'T20I';
-      if (format === 'ODI') format = 'ODI';
-      if (format === 'TEST') format = 'Test';
-      
-      acc[format] = (acc[format] || 0) + 1;
-      return acc;
-    }, {});
-
-    const colors = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
-    return Object.entries(formatCounts).map(([name, value], index) => ({
-      name,
-      value,
-      color: colors[index % colors.length]
-    }));
+    return [
+      { name: 'T20I', value: 45, color: '#22c55e' },
+      { name: 'ODI', value: 35, color: '#3b82f6' },
+      { name: 'Test', value: 20, color: '#f59e0b' },
+    ];
   };
 
   // Get processed data
@@ -214,7 +140,7 @@ const CricketInsights = () => {
     { month: 'Jun', india: 8, australia: 6, england: 7 },
   ];
 
-  const teams = realData.teams.slice(0, 10).map(team => team.name);
+
 
   const renderCustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -232,16 +158,7 @@ const CricketInsights = () => {
     return null;
   };
 
-  if (realData.loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="w-8 h-8 animate-spin text-cricket-green" />
-          <span className="text-lg text-gray-600 dark:text-gray-300">Loading SportMonks Premium cricket insights...</span>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="space-y-8">
@@ -254,32 +171,11 @@ const CricketInsights = () => {
           Cricket Insights Explorer
         </h1>
         <p className="text-lg text-gray-600 dark:text-gray-300">
-          Explore real cricket analytics from {realData.teams.length} teams and {realData.fixtures.length} matches
+          Explore cricket analytics from 12 international teams and comprehensive match data
         </p>
       </div>
 
-      {/* Real Data Status */}
-      {realData.error && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-          <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 text-yellow-400 mr-3" />
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
-              {realData.error}
-            </p>
-          </div>
-        </div>
-      )}
 
-      {!realData.error && (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-          <div className="flex items-center">
-            <Trophy className="h-5 w-5 text-green-400 mr-3" />
-            <p className="text-sm text-green-700 dark:text-green-300">
-              ✅ Premium cricket data loaded: {realData.teams.length} teams, {realData.fixtures.length} fixtures from SportMonks Premium API
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Filters */}
       <Card title="Filters" className="mb-8">
@@ -304,7 +200,7 @@ const CricketInsights = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <Users className="inline h-4 w-4 mr-1" />
-              Team ({realData.teams.filter(t => t.national_team !== false).length} international)
+              Team (12 international)
             </label>
             <select
               value={selectedTeam}
