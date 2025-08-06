@@ -28,7 +28,7 @@ A comprehensive cricket analytics platform built with React, featuring match pre
 
 ## 🚀 Live Demo
 
-Visit the live application: [Cricklytics](https://adeelshaikh.github.io/cricket-analytics)
+Visit the live application: [Cricklytics](https://adeelshaikh1997.github.io/cricket)
 
 ## 🛠️ Technology Stack
 
@@ -68,8 +68,8 @@ Visit the live application: [Cricklytics](https://adeelshaikh.github.io/cricket-
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/adeelshaikh/cricket-analytics.git
-   cd cricket-analytics/frontend
+   git clone https://github.com/adeelshaikh1997/cricket.git
+   cd cricket/frontend
    ```
 
 2. **Install dependencies**
@@ -204,7 +204,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Developer**: Adeel Shaikh
 - **GitHub**: [@adeelshaikh](https://github.com/adeelshaikh)
-- **Project**: [Cricket Analytics](https://github.com/adeelshaikh/cricket-analytics)
+- **Project**: [Cricket Analytics](https://github.com/adeelshaikh1997/cricket)
 
 ---
 
