@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/cricket-analytics/static/css/main.98935289.css",
+    "main.js": "/cricket-analytics/static/js/main.c150488b.js",
+    "static/js/453.54292a4b.chunk.js": "/cricket-analytics/static/js/453.54292a4b.chunk.js",
+    "index.html": "/cricket-analytics/index.html",
+    "main.98935289.css.map": "/cricket-analytics/static/css/main.98935289.css.map",
+    "main.c150488b.js.map": "/cricket-analytics/static/js/main.c150488b.js.map",
+    "453.54292a4b.chunk.js.map": "/cricket-analytics/static/js/453.54292a4b.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.98935289.css",
+    "static/js/main.c150488b.js"
+  ]
+}
