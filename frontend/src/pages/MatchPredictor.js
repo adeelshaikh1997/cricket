@@ -181,6 +181,69 @@ const MatchPredictor = () => {
         </p>
       </div>
 
+      {/* Welcome Section - Show when no prediction */}
+      {!prediction && !loading && (
+        <Card title="🏏 Welcome to Cricklytics Predictor" subtitle="Get started by selecting teams and match conditions">
+          <div className="text-center py-8">
+            <div className="max-w-2xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="text-center">
+                  <div className="bg-cricket-green-100 dark:bg-cricket-green-900/30 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                    <Users className="h-8 w-8 text-cricket-green-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Select Teams</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Choose from 12 international cricket teams</p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-cricket-blue-100 dark:bg-cricket-blue-900/30 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                    <MapPin className="h-8 w-8 text-cricket-blue-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Pick Venue</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Select from famous cricket stadiums</p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-cricket-gold-100 dark:bg-cricket-gold-900/30 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                    <Trophy className="h-8 w-8 text-cricket-gold-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Get Prediction</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Receive AI-powered match predictions</p>
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-r from-cricket-green-50 to-cricket-blue-50 dark:from-cricket-green-900/20 dark:to-cricket-blue-900/20 rounded-lg p-6 mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">🎯 How It Works</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
+                  <div>
+                    <strong>Team Ranking:</strong> Higher ranked teams get probability boost
+                  </div>
+                  <div>
+                    <strong>Toss Advantage:</strong> 15% boost for toss winner
+                  </div>
+                  <div>
+                    <strong>Home Advantage:</strong> 10% boost for home teams
+                  </div>
+                  <div>
+                    <strong>Format Experience:</strong> 20% base factor for international experience
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-3">
+                <span className="px-3 py-1 bg-cricket-green-100 dark:bg-cricket-green-900/30 text-cricket-green-800 dark:text-cricket-green-200 rounded-full text-sm">
+                  🏆 12 International Teams
+                </span>
+                <span className="px-3 py-1 bg-cricket-blue-100 dark:bg-cricket-blue-900/30 text-cricket-blue-800 dark:text-cricket-blue-200 rounded-full text-sm">
+                  🏟️ 10 Famous Venues
+                </span>
+                <span className="px-3 py-1 bg-cricket-gold-100 dark:bg-cricket-gold-900/30 text-cricket-gold-800 dark:text-cricket-gold-200 rounded-full text-sm">
+                  📊 Smart Analytics
+                </span>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

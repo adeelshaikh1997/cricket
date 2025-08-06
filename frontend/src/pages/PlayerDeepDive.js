@@ -20,7 +20,8 @@ import {
   User,
   Target,
   Loader2,
-  Search
+  Search,
+  Trophy
 } from 'lucide-react';
 
 const PlayerDeepDive = () => {
@@ -720,6 +721,73 @@ const PlayerDeepDive = () => {
       </div>
 
 
+
+      {/* Welcome Section - Show when no player is selected */}
+      {!selectedPlayer && !loadingPlayerStats && (
+        <Card title="🏏 Welcome to Player Analytics" subtitle="Explore comprehensive statistics for international cricket players">
+          <div className="text-center py-8">
+            <div className="max-w-3xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div className="text-center">
+                  <div className="bg-cricket-green-100 dark:bg-cricket-green-900/30 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                    <User className="h-8 w-8 text-cricket-green-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">50 Players</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">International stars</p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-cricket-blue-100 dark:bg-cricket-blue-900/30 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                    <Target className="h-8 w-8 text-cricket-blue-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">4 Roles</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Batsmen, Bowlers, All-rounders, Wicket-keepers</p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-cricket-gold-100 dark:bg-cricket-gold-900/30 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                    <Search className="h-8 w-8 text-cricket-gold-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Smart Search</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Find players instantly</p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-purple-100 dark:bg-purple-900/30 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                    <Trophy className="h-8 w-8 text-purple-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Deep Analytics</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Comprehensive stats</p>
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-r from-cricket-green-50 to-cricket-blue-50 dark:from-cricket-green-900/20 dark:to-cricket-blue-900/20 rounded-lg p-6 mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">📊 What You'll Get</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
+                  <div>• <strong>Career Statistics:</strong> Batting & bowling averages</div>
+                  <div>• <strong>Recent Form:</strong> Last 10 matches analysis</div>
+                  <div>• <strong>Performance Trends:</strong> 6-month trend charts</div>
+                  <div>• <strong>Format Performance:</strong> T20I, ODI, Test stats</div>
+                  <div>• <strong>Opponent Analysis:</strong> Performance vs different teams</div>
+                  <div>• <strong>Skills Radar:</strong> Role-specific skill assessment</div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-3 mb-6">
+                <span className="px-3 py-1 bg-cricket-green-100 dark:bg-cricket-green-900/30 text-cricket-green-800 dark:text-cricket-green-200 rounded-full text-sm">
+                  🇮🇳 India (6 players)
+                </span>
+                <span className="px-3 py-1 bg-cricket-blue-100 dark:bg-cricket-blue-900/30 text-cricket-blue-800 dark:text-cricket-blue-200 rounded-full text-sm">
+                  🇦🇺 Australia (6 players)
+                </span>
+                <span className="px-3 py-1 bg-cricket-gold-100 dark:bg-cricket-gold-900/30 text-cricket-gold-800 dark:text-cricket-gold-200 rounded-full text-sm">
+                  🏴󠁧󠁢󠁥󠁮󠁧󠁿 England (6 players)
+                </span>
+                <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full text-sm">
+                  🇵🇰 Pakistan (5 players)
+                </span>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Player Selection */}
       <Card title="🔍 Player Selection" subtitle="Search and select any international cricket player for detailed analysis">
